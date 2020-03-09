@@ -9,7 +9,7 @@ plan <- drake_plan(
     # tuning_setting, mean_value, and model_function.
     transform = cross(
       ms_setup,diag=!!c(3,6,15),expt=!!c(1,2),
-      method = c("rf", "xgbDART"),
+      method = c("RF", "XGB"),
       idx = !!c("pat","spec"),
       .id = c(diag,expt,ms_setup,method,idx),.tag_out=dataset
     )
