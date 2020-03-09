@@ -44,12 +44,16 @@ get_model<-function(ms_setup,diag,expt,method,idx){
   }
 }
 
+mapMZ<-function(model,fm){
+  
+}
+
 predict_dataset<-function(model,ms_setup,ddiag,dexpt){
   if(length(mode)==0) return(data.frame())
   m<-model$model
   fm<-load_dataset(model,ms_setup,ddiag,dexpt)
   if(dim(fm)[1]==0) return(data.frame())
-  
+  fmapped<-mapMZ(m,fm)
 }
 load_dataset<-function(model,ms_setup,ddiag,dexpt){
   fmfname<-get_fm_fname(ms_setup,ddiag,dexpt)
