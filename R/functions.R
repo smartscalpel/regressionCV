@@ -45,7 +45,8 @@ get_model<-function(ms_setup,diag,expt,method,idx){
 }
 
 mapMZ<-function(model,fm){
-  
+  modMZ<-as.numeric(sub('^MZ_','',model$xNames))
+  dataMZ<-as.numeric(sub('^MZ_','',names(fm)[grep('^MZ',names(fm))])))
 }
 
 predict_dataset<-function(model,ms_setup,ddiag,dexpt){
