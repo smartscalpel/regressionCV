@@ -14,6 +14,37 @@ library(doParallel)
 #path<-'~/Downloads/peak2019.full/'
 path<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/RegReports/'
 
+#' Get peak file names from peak files directory.
+#'
+#' @return
+get_peaks<-function(){
+  stop('Not implemented yet')
+}
+
+#' Prepare feature matrix.
+#' Method load files named in the peaks parameter, and convert them into feature matrix.
+#' Add all annotation required for the further data analysis including resolution, mode, 
+#' exp_setup, diagnosis, percentage of norm tissue etc.
+#'
+#' @param peaks -- list of peak files to be converted into feature matrix
+#'
+prepare_feature_matrix<-function(peaks){
+  stop('Not implemented yet')
+}
+
+
+#' Prepare panel of three PCA plots: 1-2, 2-3, 1-3
+#'
+#' @param fm feature matrix to plot
+#' @param color name of the column to color plot with
+#'
+plot_pca<-function(fm, color){
+  data=fm[[1]]
+  stop('Not implemented yet')
+}
+
+
+
 get_model_fname<-function(ms_setup,diag,expt,method,idx){
   res=ms_setup[1]
   mode=ms_setup[2]
