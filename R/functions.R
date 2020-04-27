@@ -12,13 +12,20 @@ library(randomForest)
 library(doParallel)
 
 #path<-'~/Downloads/peak2019.full/'
-path<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/RegReports/'
+path<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
 
 #' Get peak file names from peak files directory.
 #'
-#' @return
-get_peaks<-function(){
-  stop('Not implemented yet')
+#' @return list of file names for peaks
+get_peaks<-function(dpath){
+  fl<-dir(path = dpath,pattern = '*.peak.rds')
+  if(grepl('/$',dpath)){
+    p<-dpath
+  }else{
+    p<-paste0(dpath,'/')
+  }
+  return(paste0(p,fl))
+  # return(fl)
 }
 
 #' Prepare feature matrix.
@@ -29,9 +36,124 @@ get_peaks<-function(){
 #' @param peaks -- list of peak files to be converted into feature matrix
 #'
 prepare_feature_matrix<-function(peaks){
-  stop('Not implemented yet')
+  # n<-peaks[[1]]
+  # cat('prepare_feature_matrix',n)
+  # d<-data.frame(name=n,MZ_1=rnorm(10),MZ_2=2*rnorm(10))
+  # #write.csv(d,paste0(n,'.csv'))
+  # return(d)
+    getMD<-function(p){
+      as.data.frame(metaData(p))
+    }
+    peaksL<-readRDS(peaks)
+    dl<-lapply(peaksL, getMD)
+    md<-do.call(rbind,dl)
+    md$norm.p<-as.numeric(as.character(md$norm.p))
+    md$tumor.p<-as.numeric(as.character(md$tumor.p))
+    md$necro.p<-as.numeric(as.character(md$necro.p))
+    md$fname<-basename(peaks)
+    wf<-determineWarpingFunctions(peaksL,
+                                  method="lowess",
+                                  plot=FALSE,minFrequency=0.05)
+    aPeaks<-warpMassPeaks(peaksL,wf)
+    bPeaks <- binPeaks(aPeaks, tolerance=2e-3)
+    fpeaks <- filterPeaks(bPeaks,
+                          labels=md$diag,
+                          minFrequency=0.25, mergeWhitelists=TRUE)
+    featureMatrix <- intensityMatrix(fpeaks)
+    idNA<-which(is.na(featureMatrix),arr.ind =TRUE)
+    featureMatrix[idNA]<-0
+    colnames(featureMatrix)<-paste0('MZ_',round(as.numeric(colnames(featureMatrix)),3))
+    return(cbind(md,featureMatrix))
 }
 
+normtypes<-factor(c('None','Autoscaling','Pareto'))
+
+#' Title
+#'
+#' @param fm feature matrix
+#' @param normtype type of norm to apply
+#'
+#' @return normalized fm
+normalize<-function(fm,normtype){
+  cat(length(fm),'\n')
+  #fm<-fml[[1]]
+  #cat(names(fm),'\n')
+  cidx<-grep('MZ_.*',names(fm))
+  #cat(cidx,'\n')
+  mdt<-fm[,-cidx]
+  mz<-fm[,cidx]
+  #cat(normtype,dim(mdt),dim(mz),'\n')
+  mdt$Norm<-normtype
+  cat(unique(as.character(mdt$Norm)),unique(mdt$fname),'\n')
+  mz<-switch(as.character(normtype),
+  None=mz,
+  Autoscaling=scale(mz),
+  Pareto=paretoscale(mz))
+  return(cbind(mdt,mz))
+}
+
+paretoscale<-function(mz){
+  s<-apply(mz,2,sd)
+  a<-apply(mz,2,mean)
+  return(scale(mz,center = a,scale = sqrt(s)))
+}
+
+get_mdt<-function(fm){
+  mdt<-fm %>% dplyr::select(spectrumid,patientid,diagnosis,t.id,smpl.id) %>% unique
+  return(mdt)
+}
+
+groups<-factor(c('train','test'))
+smpl_split_fm<-function(fm){
+  mdt<-get_mdt(fm)
+  trainIndexSmpl <- createDataPartition(mdt$smpl.id, p = .6,
+                                    list = FALSE,
+                                    times = 1)
+  test_smpl<-mdt$smpl.id[-trainIndexSmpl]
+  fm$grp<-groups[1]
+  fm$grp[fm$smpl.id %in% test_smpl]<-groups[2]
+  return(fm)
+}
+
+train_model<-function(fm,modeltype){
+  train<-fm[fm$grp==groups[1],]
+  res<-switch (modeltype,
+    rf=train_rf(train),
+    xgb=train_xgb(train)
+  )
+  return(res)
+}
+
+smpl<-100
+
+train_rf<-function(train){
+  train<-train[sample.int(dim(train)[1],size = smpl),]
+  fitCV10<-trainControl(method = "repeatedcv",
+                        number = 10,
+                        repeats = 10)
+  # cl <- makePSOCKcluster(ncores)
+  # registerDoParallel(cl)
+  rfFitCVpat <- train(norm.p ~ ., data = train,
+                      method = "rf",
+                      trControl = fitCV10,
+                      verbose = FALSE)
+  #stopCluster(cl)
+  return(rfFitCVpat)
+}
+train_xgb<-function(train){
+  train<-train[sample.int(dim(train)[1],size = smpl),]
+  fitCV10<-trainControl(method = "repeatedcv",
+                        number = 10,
+                        repeats = 10)
+  # cl <- makePSOCKcluster(ncores)
+  # registerDoParallel(cl)
+  xboostFitCVspec <- train(norm.p ~ ., data = train,
+                           method = "xgbDART",
+                           trControl = fitCV10,
+                           verbose = FALSE)
+  #stopCluster(cl)
+  return(xboostFitCVspec)
+}
 
 #' Prepare panel of three PCA plots: 1-2, 2-3, 1-3
 #'
