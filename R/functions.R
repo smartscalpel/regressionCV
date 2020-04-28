@@ -12,7 +12,8 @@ library(randomForest)
 library(doParallel)
 
 #path<-'~/Downloads/peak2019.full/'
-path<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
+#path<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
+path<-'~/regression/'
 
 #' Get peak file names from peak files directory.
 #'
@@ -127,7 +128,7 @@ train_model<-function(fm,modeltype){
 smpl<-100
 
 train_rf<-function(train){
-  train<-train[sample.int(dim(train)[1],size = smpl),]
+  #train<-train[sample.int(dim(train)[1],size = smpl),]
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 10)
@@ -141,7 +142,7 @@ train_rf<-function(train){
   return(rfFitCVpat)
 }
 train_xgb<-function(train){
-  train<-train[sample.int(dim(train)[1],size = smpl),]
+  #train<-train[sample.int(dim(train)[1],size = smpl),]
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 10)
