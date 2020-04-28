@@ -20,6 +20,9 @@ dpath<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
 #' @return list of file names for peaks
 get_peaks<-function(dpath){
   fl<-dir(path = dpath,pattern = '*.peak.rds')
+  fl<-fl[grep('diag_32',fl,inver=TRUE)]
+  idx32<-sapply(fl,function(.x)file.exists(paste0(dpath,sub('diag_[0-9]+\\.','diag_32.',.x))))
+  fl<-fl[idx32]
   if(grepl('/$',dpath)){
     p<-dpath
   }else{
@@ -45,7 +48,9 @@ prepare_feature_matrix<-function(peaks){
     getMD<-function(p){
       as.data.frame(metaData(p))
     }
-    peaksL<-readRDS(peaks)
+    norm<-sub('diag_[0-9]+\\.','diag_32.',peaks)
+    l<-lapply(list(peaks,norm),readRDS)
+    peaksL<-do.call(c,l)
     dl<-lapply(peaksL, getMD)
     md<-do.call(rbind,dl)
     md$norm.p<-as.numeric(as.character(md$norm.p))
