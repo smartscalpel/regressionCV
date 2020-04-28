@@ -139,13 +139,16 @@ train_rf<-function(train){
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 10)
-  # cl <- makePSOCKcluster(ncores)
-  # registerDoParallel(cl)
+  if(!exists('ncores')){
+    ncores<- detectCores()
+  }
+  cl <- makePSOCKcluster(ncores)
+  registerDoParallel(cl)
   rfFitCVpat <- train(norm.p ~ ., data = train,
                       method = "rf",
                       trControl = fitCV10,
                       verbose = FALSE)
-  #stopCluster(cl)
+  stopCluster(cl)
   return(rfFitCVpat)
 }
 
@@ -153,13 +156,16 @@ train_xgb<-function(train){
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 10)
-  # cl <- makePSOCKcluster(ncores)
-  # registerDoParallel(cl)
+  if(!exists('ncores')){
+    ncores<- 12#detectCores()
+  }
+  cl <- makePSOCKcluster(ncores)
+  registerDoParallel(cl)
   xboostFitCVspec <- train(norm.p ~ ., data = train,
                            method = "xgbDART",
                            trControl = fitCV10,
                            verbose = FALSE)
-  #stopCluster(cl)
+  stopCluster(cl)
   return(xboostFitCVspec)
 }
 
