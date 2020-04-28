@@ -39,7 +39,7 @@ get_peaks<-function(dpath){
 #'
 #' @param peaks -- list of peak files to be converted into feature matrix
 #'
-prepare_feature_matrix<-function(peaks){
+prepare_feature_matrix<-function(peaks,norm_shift=0){
   # n<-peaks[[1]]
   # cat('prepare_feature_matrix',n)
   # d<-data.frame(name=n,MZ_1=rnorm(10),MZ_2=2*rnorm(10))
@@ -54,6 +54,7 @@ prepare_feature_matrix<-function(peaks){
     dl<-lapply(peaksL, getMD)
     md<-do.call(rbind,dl)
     md$norm.p<-as.numeric(as.character(md$norm.p))
+    md$norm.p[md$diagnosis==32]<- md$norm.p[md$diagnosis==32]-norm_shift
     md$tumor.p<-as.numeric(as.character(md$tumor.p))
     md$necro.p<-as.numeric(as.character(md$necro.p))
     md$fname<-basename(peaks)
