@@ -117,7 +117,9 @@ smpl_split_fm<-function(fm){
 }
 
 train_model<-function(fm,modeltype){
-  train<-fm[fm$grp==groups[1],]
+  idx<-grep("(MZ_.*|norm.p)",names(fm))
+  train<-fm[fm$grp==groups[1],idx]
+  train<-train[sample.int(dim(train)[1],size = smpl),]
   res<-switch (modeltype,
     rf=train_rf(train),
     xgb=train_xgb(train)
@@ -128,7 +130,6 @@ train_model<-function(fm,modeltype){
 smpl<-100
 
 train_rf<-function(train){
-  #train<-train[sample.int(dim(train)[1],size = smpl),]
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 10)
@@ -141,8 +142,8 @@ train_rf<-function(train){
   #stopCluster(cl)
   return(rfFitCVpat)
 }
+
 train_xgb<-function(train){
-  #train<-train[sample.int(dim(train)[1],size = smpl),]
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 10)
@@ -156,6 +157,9 @@ train_xgb<-function(train){
   return(xboostFitCVspec)
 }
 
+train_trigger<-function(fm){
+  return(length(unique(fm$norm.p))>2)
+}
 #' Prepare panel of three PCA plots: 1-2, 2-3, 1-3
 #'
 #' @param fm feature matrix to plot
