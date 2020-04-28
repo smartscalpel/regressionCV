@@ -13,7 +13,7 @@ library(doParallel)
 
 #path<-'~/Downloads/peak2019.full/'
 #path<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
-path<-'~/regression/'
+dpath<-'~/regression/'
 
 #' Get peak file names from peak files directory.
 #'
