@@ -133,8 +133,29 @@ train_model<-function(fm,modeltype){
   return(res)
 }
 
-smpl<-100
+smpl<-10
 
+test_model<-function(fm,model){
+  idx<-grep("(MZ_.*|norm.p)",names(fm))
+  test<-fm[,idx]
+  res<-predict(model,newdata=test)
+  fm$predict<-res
+  return(fm)
+}
+
+plot_test<-function(fm){
+  test<-fm[fm$grp==groups[1],]
+  
+  my.formula <- y ~ x
+  p <- ggplot(data = test, aes(x = norm.p, y = predict)) +
+    geom_smooth(method = "lm", se=FALSE, color="black", formula = my.formula) +
+    stat_poly_eq(formula = my.formula,
+                 eq.with.lhs = "italic(hat(y))~`=`~",
+                 aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
+                 parse = TRUE) +
+    geom_point()
+  return(p)
+}
 train_rf<-function(train){
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
