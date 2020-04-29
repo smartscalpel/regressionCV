@@ -15,7 +15,7 @@ make(
   # jobs = 8,
   #   log_make = "drake.log",
   # template = list(   memory = 12288,
-  #                    log_file = "logs/slurm_%a.log")
+  #                    log_file = "logs/slurm_%A_%a.log")
   # 
 
 )
