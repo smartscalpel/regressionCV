@@ -13,6 +13,9 @@ make(
   verbose = 2 
   # ,parallelism = "clustermq",
   # jobs = 8,
-  # console_log_file = "drake.log"
+  #   log_make = "drake.log",
+  # template = list(   memory = 12288,
+  #                    log_file = "logs/slurm_%a.log")
+  # 
 
 )
