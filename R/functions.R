@@ -121,7 +121,7 @@ get_mdt<-function(fm){
 
 groups<-factor(c('train','test'))
 smpl_split_fm<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") starts.\n')
   mdt<-get_mdt(fm)
   trainIndexSmpl <- createDataPartition(mdt$smpl.id, p = .6,
                                     list = FALSE,
@@ -129,12 +129,12 @@ smpl_split_fm<-function(fm){
   test_smpl<-mdt$smpl.id[-trainIndexSmpl]
   fm$grp<-groups[1]
   fm$grp[fm$smpl.id %in% test_smpl]<-groups[2]
-  cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'") finish.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") finish.\n')
   return(fm)
 }
 
 train_model<-function(fm,modeltype){
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',modeltype,'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',modeltype,'") starts.\n')
   idx<-grep("(MZ_.*|norm.p)",names(fm))
   train<-fm[fm$grp==groups[1],idx]
   train<-train[sample.int(dim(train)[1],size = smpl),]
