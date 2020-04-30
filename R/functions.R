@@ -142,25 +142,27 @@ train_model<-function(fm,modeltype){
     rf=train_rf(train),
     xgb=train_xgb(train)
   )
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',modeltype,'") finish.\n')
-  return(res)
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',modeltype,'") finish.\n')
+  return(list(model=res,data=fm))
 }
 
 smpl<-10
 
-test_model<-function(fm,model){
-  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',model$method,'") starts.\n')
+test_model<-function(mod){
+  fm<-mod$data
+  model<-mod$model
+  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',model$method,'") starts.\n')
   idx<-grep("(MZ_.*|norm.p)",names(fm))
   test<-fm[,idx]
   res<-predict(model,newdata=test)
   fm$predict<-res
   fm$method<-model$method
-  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',model$method,'") finish.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',model$method,'") finish.\n')
   return(fm)
 }
 
 plot_test<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',fm$method[1],'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
   test<-fm[fm$grp==groups[1],]
   
   my.formula <- y ~ x
@@ -171,7 +173,7 @@ plot_test<-function(fm){
                  aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
                  parse = TRUE) +
     geom_point()
-  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',fm$method[1],'") finish\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
   return(p)
 }
 train_rf<-function(train){
