@@ -71,7 +71,11 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
     md$norm.p[md$diagnosis==32]<- md$norm.p[md$diagnosis==32]-norm_shift
     md$tumor.p<-as.numeric(as.character(md$tumor.p))
     md$necro.p<-as.numeric(as.character(md$necro.p))
-    md$fname<-basename(peaks)
+    if(grepl('othr.p',names(md))){
+      md$othr.p<-as.numeric(as.character(md$othr.p))
+      md$norm.p<-md$norm.p+md$othr.p
+    }
+    md$fname<-basename(peaks[1])
     wf<-determineWarpingFunctions(peaksL,
                                   method="lowess",
                                   plot=FALSE,minFrequency=0.05)
@@ -88,7 +92,7 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
     return(cbind(md,featureMatrix))
 }
 
-normtypes<-factor(c('None','Autoscaling','Pareto'))
+normtypes<-factor(c('None'))#,'Autoscaling','Pareto'))
 
 #' Title
 #'

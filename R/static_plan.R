@@ -6,8 +6,9 @@ plan <- drake_plan(
     # tuning_setting, mean_value, and model_function.
     transform = cross(
       res=!!c(2),
-      mode=!!c(1,2),
-      mz=!!c(1,2),diag=!!c(3,6),
+      mode=!!c(1),#,2),
+      mz=!!c(1),#,2),
+      diag=!!c(3),#,6),
       .id = c(diag,res,mode,mz),.tag_out=dataset
     )
   ),
@@ -22,8 +23,19 @@ plan <- drake_plan(
     dimPat)),
   specStat= target(bind_rows(dimSpec),transform = combine(
     dimSpec)),
-  wrtPatStat=write.csv(patStat,file='patStat.csv'),
-  wrtSpecStat=write.csv(specStat,file='specStat.csv')
+  wrtPatStat=write.csv(patStat,file=file_out('patStat.csv')),
+  wrtSpecStat=write.csv(specStat,file=file_out('specStat.csv')),
+  smpl_splited_fm=target(smpl_split_fm(fm),transform = map(fm)),# split feature matrix into train/test parts by patientid
+  normalized_fm=target(normalize(fm=smpl_splited_fm,normtype),transform = cross(smpl_splited_fm,normtype=!!c('None'))),#,'Autoscaling','Pareto'))),# scale feature matrix \cite{vandenBerg:2006hm}
+  # splited_fm=target(transform = map(normalized_fm)),# split feature matrix into train/test parts by spectrumid with respect to percentage
+  # pca=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make PCA plots for transformed feature matrices
+  # umap=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make umap plots for transformed feature matrices
+  rf_cv10=target(train_model(fm=normalized_fm,modeltype='rf'),transform = map(normalized_fm)),# train regression model with CV10
+  test_rf=target(test_model(fm=normalized_fm,model=rf_cv10),transform = map(rf_cv10)),
+  plot_rf=target(plot_test(fm=test_rf),transform = map(test_rf)),
+  xgb_cv10=target(train_model(fm=normalized_fm,modeltype='xgb'),transform = map(normalized_fm)),# train regression model with CV10
+  test_xgb=target(test_model(fm=normalized_fm,model=xgb_cv10),transform = map(xgb_cv10)),
+  plot_xgb=target(plot_test(fm=test_xgb),transform = map(test_xgb))  
   # model = target(
   #   get_model(ms_setup,diag,expt,method,idx),
   #   # Define an analysis target for each combination of
