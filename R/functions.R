@@ -51,8 +51,19 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
     getMD<-function(p){
       as.data.frame(metaData(p))
     }
+    getRDS<-function(f){
+      cat(format(Sys.time(), "%b %d %X"),'Function: getRDS("',f,'") starts.\n')
+      res<-try(readRDS(f))
+      cat(format(Sys.time(), "%b %d %X"),class(res),'.\n')
+      if(inherits(res, "try-error")){
+        return(list())
+      }else{
+        return(res)
+      }
+    }
     norm<-sub('diag_[0-9]+\\.','diag_32.',peaks)
-    l<-lapply(list(peaks,norm),readRDS)
+    idx<-sapply(norm,file.exists)
+    l<-lapply(c(peaks,norm[idx]),getRDS)
     peaksL<-do.call(c,l)
     dl<-lapply(peaksL, getMD)
     md<-do.call(rbind,dl)
@@ -244,14 +255,11 @@ get_model_fname<-function(ms_setup,diag,expt,method,idx){
   return(fname)
 }
 
-get_fm_fname<-function(ms_setup,ddiag,dexpt){
+get_fm_fname<-function(res,mode,mz,ddiag,path){
   cat(format(Sys.time(), "%b %d %X"),'Function: get_fm_fname','\n')
-  res=ms_setup[1]
-  mode=ms_setup[2]
-  mz=ms_setup[3]
-  dev=ifelse(dexpt==1,2,4)
-  fname<-sprintf('peak2019.diag_%d.expt_%d.res_%d.mode_%d.dev_%d.mz_%d.fm.rds',
-                 ddiag,dexpt,res,mode,dev,mz)
+  fpatt<-sprintf('peak2019.diag_%d.expt_.*.res_%d.mode_%d.dev_.*.mz_%d.peak.rds',
+                 ddiag,res,mode,mz)
+  fname<-dir(path = path,pattern = fpatt)
   return(fname)
 }
 
@@ -282,15 +290,12 @@ predict_dataset<-function(model,ms_setup,ddiag,dexpt){
   fmapped<-mapMZ(m,fm)
 }
 
-load_dataset<-function(ms_setup,ddiag,dexpt){
+load_dataset<-function(res,mode,mz,diag){
   cat(format(Sys.time(), "%b %d %X"),'Function: load_dataset','\n')
-  fmfname<-get_fm_fname(ms_setup,ddiag,dexpt)
+  path<-dpath
+  fmfname<-get_fm_fname(res,mode,mz,diag,path)
   fpath<-paste0(path,fmfname)
-  if(file.exists(fpath)){
-    fm<- readRDS(fpath)
-  }else{
-    return(data_frame())
-  }
+  return(fpath)
 }
 
 get_pat_df<-function(fm){

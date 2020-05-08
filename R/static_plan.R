@@ -1,17 +1,17 @@
 plan <- drake_plan(
-  ms_setup=target(c(res=r,mode=m,mz=z),
-                  transform = cross(r=!!c(2),
-                                    m=!!c(1,2),
-                                    z=!!c(1,2))),
-  fm = target(
-    load_dataset(ms_setup,diag,expt),
+  trace = TRUE,
+  files = target(
+    load_dataset(res,mode,mz,diag),
     # Define an analysis target for each combination of
     # tuning_setting, mean_value, and model_function.
     transform = cross(
-      ms_setup,diag=!!c(3,6),expt=!!c(1,2),
-      .id = c(diag,expt,ms_setup),.tag_out=dataset
+      res=!!c(2),
+      mode=!!c(1,2),
+      mz=!!c(1,2),diag=!!c(3,6),
+      .id = c(diag,res,mode,mz),.tag_out=dataset
     )
   ),
+  fm=target(prepare_feature_matrix(files),transform=map(files,.id = c(diag,res,mode,mz),.tag_out=dataset)),
   patDF = target(get_pat_df(fm),
                  transform = map(fm)),
   specDF = target(get_spec_df(fm),
