@@ -6,9 +6,9 @@ plan <- drake_plan(
     # tuning_setting, mean_value, and model_function.
     transform = cross(
       res=!!c(2),
-      mode=!!c(1),#,2),
-      mz=!!c(1),#,2),
-      diag=!!c(3),#,6),
+      mode=!!c(1,2),
+      mz=!!c(1,2),
+      diag=!!c(3,6),
       .id = c(diag,res,mode,mz),.tag_out=dataset
     )
   ),
