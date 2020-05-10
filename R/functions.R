@@ -68,13 +68,15 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
     dl<-lapply(peaksL, getMD)
     md<-do.call(rbind,dl)
     md$norm.p<-as.numeric(as.character(md$norm.p))
-    md$norm.p[md$diagnosis==32]<- md$norm.p[md$diagnosis==32]-norm_shift
     md$tumor.p<-as.numeric(as.character(md$tumor.p))
     md$necro.p<-as.numeric(as.character(md$necro.p))
     if(grepl('othr.p',names(md))){
       md$othr.p<-as.numeric(as.character(md$othr.p))
-      md$norm.p<-md$norm.p+md$othr.p
+      md$target<-md$norm.p+md$othr.p
+    }else{
+      md$target<-md$norm.p
     }
+    md$target[md$diagnosis==32]<- md$target[md$diagnosis==32]+norm_shift
     md$fname<-basename(peaks[1])
     wf<-determineWarpingFunctions(peaksL,
                                   method="lowess",
@@ -204,7 +206,7 @@ test_model<-function(mod){
   fm<-mod$data
   model<-mod$model
   cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',model$method,'") starts.\n')
-  idx<-grep("(MZ_.*|norm.p)",names(fm))
+  idx<-grep("(MZ_.*|target)",names(fm))
   test<-fm[,idx]
   res<-predict(model,newdata=test)
   fm$predict<-res
@@ -218,7 +220,7 @@ plot_test<-function(fm){
   test<-fm[fm$grp==groups[2],]
   
   my.formula <- y ~ x
-  p <- ggplot(data = test, aes(x = norm.p, y = predict)) +
+  p <- ggplot(data = test, aes(x = target, y = predict)) +
     geom_smooth(method = "lm", se=FALSE, color="black", formula = my.formula) +
     stat_poly_eq(formula = my.formula,
                  eq.with.lhs = "italic(hat(y))~`=`~",
@@ -239,7 +241,7 @@ train_rf<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'ncores=',ncores,'.\n')
   cl <- makePSOCKcluster(ncores)
   registerDoParallel(cl)
-  rfFitCVpat <- train(norm.p ~ ., data = train,
+  rfFitCVpat <- train(target ~ ., data = train,
                       method = "rf",
                       trControl = fitCV10,
                       verbose = FALSE)
@@ -259,7 +261,7 @@ train_xgb<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'ncores=',ncores,'.\n')
   cl <- makePSOCKcluster(ncores)
   registerDoParallel(cl)
-  xboostFitCVspec <- train(norm.p ~ ., data = train,
+  xboostFitCVspec <- train(target ~ ., data = train,
                            method = "xgbDART",
                            trControl = fitCV10,
                            verbose = FALSE)
