@@ -31,11 +31,9 @@ plan <- drake_plan(
   # pca=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make PCA plots for transformed feature matrices
   # umap=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make umap plots for transformed feature matrices
   rf_cv10=target(train_model(fm=normalized_fm,modeltype='rf'),transform = map(normalized_fm)),# train regression model with CV10
-  test_rf=target(test_model(fm=normalized_fm,model=rf_cv10),transform = map(rf_cv10)),
+  test_rf=target(test_model(rf_cv10),transform = map(rf_cv10)),
   plot_rf=target(plot_test(fm=test_rf),transform = map(test_rf)),
   xgb_cv10=target(train_model(fm=normalized_fm,modeltype='xgb'),transform = map(normalized_fm)),# train regression model with CV10
-  test_xgb=target(test_model(fm=normalized_fm,model=xgb_cv10),transform = map(xgb_cv10)),
-  plot_xgb=target(plot_test(fm=test_xgb),transform = map(test_xgb))  
   # model = target(
   #   get_model(ms_setup,diag,expt,method,idx),
   #   # Define an analysis target for each combination of
