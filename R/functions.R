@@ -196,7 +196,7 @@ train_rf<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_rf',' starts.\n')
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
-                        repeats = 10)
+                        repeats = 5)
   if(!exists('ncores')){
     ncores<- detectCores()
   }
@@ -216,7 +216,7 @@ train_xgb<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_xgb',' starts.\n')
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
-                        repeats = 10)
+                        repeats = 5)
   if(!exists('ncores')){
     ncores<- detectCores()
   }
