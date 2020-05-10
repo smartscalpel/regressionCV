@@ -93,7 +93,36 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
 }
 
 normtypes<-factor(c('None'))#,'Autoscaling','Pareto'))
+filtertypes<-c('None','ZVar','Corr')
 
+feature_filter<-function(fm,ftype){
+  cat(format(Sys.time(), "%b %d %X"),'Function: feature_filter("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',ftype,'") starts.\n')
+  idx<-grep("MZ_.*",names(fm))
+  features<-fm[,idx]
+  mdt<-fm[,-idx]
+  res<-switch (ftype,
+               None=features,
+               ZVar=filter_nzv(features),
+               Corr=filter_corr(features)
+  )
+  res<-cbind(mdt,res)
+  cat(format(Sys.time(), "%b %d %X"),'Function: feature_filter("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',ftype,'") finish.\n')
+  return(res)
+  
+}
+
+filter_nzv<-function(fm){
+  nzv <- nearZeroVar(fm)
+  res<-fm[,-nzv]
+  return(res)
+}
+filter_corr<-function(fm,cutoff = .8){
+  fm1<-filter_nzv(fm)
+  descrCor <- cor(fm1)
+  highlyCorDescr <- findCorrelation(descrCor, cutoff = cutoff)
+  res<-fm1[,-highlyCorDescr]
+  return(res)
+}
 #' Title
 #'
 #' @param fm feature matrix
