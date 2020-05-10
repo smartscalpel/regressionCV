@@ -12,7 +12,8 @@ library(randomForest)
 library(doParallel)
 
 #path<-'~/Downloads/peak2019.full/'
-dpath<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
+dpath<-'/Users/lptolik/Documents/Projects/MSpeaks/data/regression/'
+#dpath<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
 #dpath<-'~/regression/'
 
 #' Get peak file names from peak files directory.
