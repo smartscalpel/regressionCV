@@ -180,9 +180,16 @@ smpl_split_fm<-function(fm){
 
 train_model<-function(fm,modeltype){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',modeltype,'") starts.\n')
-  idx<-grep("(MZ_.*|norm.p)",names(fm))
-  train<-fm[fm$grp==groups[1],idx]
-  train<-train[sample.int(dim(train)[1],size = smpl),]
+  fm$was.trained<-0
+  idx<-grep("(MZ_.*|target)",names(fm))
+  trdx<-which(fm$grp==groups[1])
+  if(smpl<length(trdx)){
+  jdx<-trdx[sample.int(length(trdx),size = smpl)]
+  }else{
+    jdx<-trdx
+  }
+  fm$was.trained[jdx]<-1
+  train<-fm[jdx,idx]
   res<-switch (modeltype,
     rf=train_rf(train),
     xgb=train_xgb(train)
@@ -191,7 +198,7 @@ train_model<-function(fm,modeltype){
   return(list(model=res,data=fm))
 }
 
-smpl<-10
+smpl<-5000
 
 test_model<-function(mod){
   fm<-mod$data
