@@ -34,6 +34,24 @@ plan <- drake_plan(
   test_rf=target(test_model(rf_cv10),transform = map(rf_cv10)),
   plot_rf=target(plot_test(fm=test_rf),transform = map(test_rf)),
   xgb_cv10=target(train_model(fm=normalized_fm,modeltype='xgb'),transform = map(normalized_fm)),# train regression model with CV10
+  test_xgb=target(test_model(xgb_cv10),transform = map(xgb_cv10)),
+  plot_xgb=target(plot_test(fm=test_xgb),transform = map(test_xgb)),
+  save_plot_xgb = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.norm_%s.cv10.%s.plot.pdf',
+                                diag,res,mode,mz,normtype,"xgb")),
+    plot = plot_xgb,
+    width = 8,
+    height = 8
+  ),transform = map(plot_xgb)),
+  save_plot_rf = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.norm_%s.cv10.%s.plot.pdf',
+                                diag,res,mode,mz,normtype,"rf")),
+    plot = plot_rf,
+    width = 8,
+    height = 8
+  ),transform = map(plot_rf))#,
+  #report = knit(knitr_in("report.Rmd"), file_out("report.md"), quiet = TRUE)
+  
   # model = target(
   #   get_model(ms_setup,diag,expt,method,idx),
   #   # Define an analysis target for each combination of
