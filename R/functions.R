@@ -179,7 +179,7 @@ test_model<-function(mod){
 
 plot_test<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
-  test<-fm[fm$grp==groups[1],]
+  test<-fm[fm$grp==groups[2],]
   
   my.formula <- y ~ x
   p <- ggplot(data = test, aes(x = norm.p, y = predict)) +
