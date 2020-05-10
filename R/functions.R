@@ -216,21 +216,48 @@ test_model<-function(mod){
   return(fm)
 }
 
-plot_test<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
-  test<-fm[fm$grp==groups[2],]
-  
+make_point_plot<-function(test){
   my.formula <- y ~ x
   p <- ggplot(data = test, aes(x = target, y = predict)) +
     geom_smooth(method = "lm", se=FALSE, color="black", formula = my.formula) +
     stat_poly_eq(formula = my.formula,
                  eq.with.lhs = "italic(hat(y))~`=`~",
                  aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
-                 parse = TRUE) +
-    geom_point()
+                 parse = TRUE)
+  return(p)
+}
+plot_test_point<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
+  test<-fm[fm$grp==groups[2],]
+  p<-make_point_plot(test)+geom_point() +
+    geom_jitter()
   cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
   return(p)
 }
+plot_train_point<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
+  test<-fm[fm$was.trained==0,]
+  p<-make_point_plot(test)+geom_point()+
+    geom_jitter(aes(x = target, y = predict,color='blue'),data=fm[fm$was.trained==1,])
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+plot_test_box<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
+  test<-fm[fm$grp==groups[2],]
+  p<-make_point_plot(test)+geom_boxplot(aes(group=target))
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+plot_train_box<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
+  test<-fm[fm$was.trained==0,]
+  p<-make_point_plot(test)++geom_boxplot(aes(group=target))+
+    geom_jitter(aes(x = target, y = predict,color='blue'),data=fm[fm$was.trained==1,])
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+
 train_rf<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_rf',' starts.\n')
   fitCV10<-trainControl(method = "repeatedcv",
