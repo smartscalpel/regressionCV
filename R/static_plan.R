@@ -27,13 +27,14 @@ plan <- drake_plan(
   wrtSpecStat=write.csv(specStat,file=file_out('specStat.csv')),
   smpl_splited_fm=target(smpl_split_fm(fm),transform = map(fm)),# split feature matrix into train/test parts by patientid
   normalized_fm=target(normalize(fm=smpl_splited_fm,normtype),transform = cross(smpl_splited_fm,normtype=!!c('None'))),#,'Autoscaling','Pareto'))),# scale feature matrix \cite{vandenBerg:2006hm}
+  filter_fm=target(feature_filter(fm=normalized_fm,ftype),transform = cross(normalized_fm,ftype=!!filtertypes)),# reduce feature space 
   # splited_fm=target(transform = map(normalized_fm)),# split feature matrix into train/test parts by spectrumid with respect to percentage
   # pca=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make PCA plots for transformed feature matrices
   # umap=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make umap plots for transformed feature matrices
-  rf_cv10=target(train_model(fm=normalized_fm,modeltype='rf'),transform = map(normalized_fm)),# train regression model with CV10
+  rf_cv10=target(train_model(fm=filter_fm,modeltype='rf'),transform = map(filter_fm)),# train regression model with CV10
   test_rf=target(test_model(rf_cv10),transform = map(rf_cv10)),
   plot_rf=target(plot_test(fm=test_rf),transform = map(test_rf)),
-  xgb_cv10=target(train_model(fm=normalized_fm,modeltype='xgb'),transform = map(normalized_fm)),# train regression model with CV10
+  xgb_cv10=target(train_model(fm=filter_fm,modeltype='xgb'),transform = map(filter_fm)),# train regression model with CV10
   test_xgb=target(test_model(xgb_cv10),transform = map(xgb_cv10)),
   plot_xgb=target(plot_test(fm=test_xgb),transform = map(test_xgb)),
   save_plot_xgb = target(ggsave(
