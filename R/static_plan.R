@@ -33,24 +33,40 @@ plan <- drake_plan(
   # umap=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make umap plots for transformed feature matrices
   rf_cv10=target(train_model(fm=filter_fm,modeltype='rf'),transform = map(filter_fm)),# train regression model with CV10
   test_rf=target(test_model(rf_cv10),transform = map(rf_cv10)),
-  plot_rf=target(plot_test(fm=test_rf),transform = map(test_rf)),
+  plot_rf_point=target(plot_test_point(fm=test_rf),transform = map(test_rf)),
+  plot_rf_box=target(plot_test_box(fm=test_rf),transform = map(test_rf)),
   xgb_cv10=target(train_model(fm=filter_fm,modeltype='xgb'),transform = map(filter_fm)),# train regression model with CV10
   test_xgb=target(test_model(xgb_cv10),transform = map(xgb_cv10)),
-  plot_xgb=target(plot_test(fm=test_xgb),transform = map(test_xgb)),
-  save_plot_xgb = target(ggsave(
-    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.norm_%s.cv10.%s.plot.pdf',
-                                diag,res,mode,mz,normtype,"xgb")),
-    plot = plot_xgb,
+  plot_xgb_point=target(plot_test_point(fm=test_xgb),transform = map(test_xgb)),
+  plot_xgb_box=target(plot_test_box(fm=test_xgb),transform = map(test_xgb)),
+  save_plot_xgb_point = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_point.pdf',
+                                diag,res,mode,mz,normtype,ftype,"xgb")),
+    plot = plot_xgb_point,
     width = 8,
     height = 8
-  ),transform = map(plot_xgb)),
-  save_plot_rf = target(ggsave(
-    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.norm_%s.cv10.%s.plot.pdf',
-                                diag,res,mode,mz,normtype,"rf")),
-    plot = plot_rf,
+  ),transform = map(plot_xgb_point)),
+  save_plot_rf_point = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_point.pdf',
+                                diag,res,mode,mz,normtype,ftype,"rf")),
+    plot = plot_rf_point,
     width = 8,
     height = 8
-  ),transform = map(plot_rf))#,
+  ),transform = map(plot_rf_point)),
+  save_plot_xgb_box = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_box.pdf',
+                                diag,res,mode,mz,normtype,ftype,"xgb")),
+    plot = plot_xgb_box,
+    width = 8,
+    height = 8
+  ),transform = map(plot_xgb_box)),
+  save_plot_rf_box = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_box.pdf',
+                                diag,res,mode,mz,normtype,ftype,"rf")),
+    plot = plot_rf_box,
+    width = 8,
+    height = 8
+  ),transform = map(plot_rf_box))#,
   #report = knit(knitr_in("report.Rmd"), file_out("report.md"), quiet = TRUE)
   
   # model = target(
