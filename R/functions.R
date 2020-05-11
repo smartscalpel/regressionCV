@@ -194,6 +194,7 @@ train_model<-function(fm,modeltype){
   }
   fm$was.trained[jdx]<-1
   train<-fm[jdx,idx]
+  cat(format(Sys.time(), "%b %d %X"),'train dataset',dim(train),'\n')
   res<-switch (modeltype,
     rf=train_rf(train),
     xgb=train_xgb(train)
