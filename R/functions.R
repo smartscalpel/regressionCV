@@ -183,7 +183,7 @@ smpl_split_fm<-function(fm){
 }
 
 train_model<-function(fm,modeltype){
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',modeltype,'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'") starts.\n')
   fm$was.trained<-0
   idx<-grep("(MZ_.*|target)",names(fm))
   trdx<-which(fm$grp==groups[1])
@@ -198,7 +198,7 @@ train_model<-function(fm,modeltype){
     rf=train_rf(train),
     xgb=train_xgb(train)
   )
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',modeltype,'") finish.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'") finish.\n')
   return(list(model=res,data=fm))
 }
 
@@ -207,13 +207,13 @@ smpl<-5000
 test_model<-function(mod){
   fm<-mod$data
   model<-mod$model
-  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',model$method,'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") starts.\n')
   idx<-grep("(MZ_.*|target)",names(fm))
   test<-fm[,idx]
   res<-predict(model,newdata=test)
   fm$predict<-res
   fm$method<-model$method
-  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',model$method,'") finish.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") finish.\n')
   return(fm)
 }
 
