@@ -202,7 +202,7 @@ train_model<-function(fm,modeltype){
   return(list(model=res,data=fm))
 }
 
-smpl<-5000
+smpl<-5e6
 
 test_model<-function(mod){
   fm<-mod$data
