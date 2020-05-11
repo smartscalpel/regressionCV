@@ -103,6 +103,7 @@ feature_filter<-function(fm,ftype){
   idx<-grep("MZ_.*",names(fm))
   features<-fm[,idx]
   mdt<-fm[,-idx]
+  mdt$Filter<-ftype
   res<-switch (ftype,
                None=features,
                ZVar=filter_nzv(features),
