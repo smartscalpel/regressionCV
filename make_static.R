@@ -9,8 +9,8 @@ drake_hpc_template_file("slurm_clustermq.tmpl")
 #options(clustermq.scheduler = "slurm", template = "slurm_clustermq.tmpl")
 
 make(
-  plan, max_expand = 1,# defined in R/plan.R
-  verbose = 2 
+  plan, #max_expand = 1,# defined in R/plan.R
+  verbose = 2 ,cache_log_file = TRUE 
   # ,parallelism = "clustermq",
   # jobs = 8,
   #   log_make = "drake.log",
