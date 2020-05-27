@@ -168,11 +168,11 @@ get_mdt<-function(fm){
 }
 
 groups<-factor(c('train','test'))
-smpl_split_fm<-function(fm){
+smpl_split_fm<-function(fm,split=0.6){
   cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") starts.\n')
   mdt<-get_mdt(fm)
   smpl_id<-unique(mdt$smpl.id)
-  trainIndexSmpl <- createDataPartition(smpl_id, p = .6,
+  trainIndexSmpl <- createDataPartition(smpl$target, p = split,
                                     list = FALSE,
                                     times = 1)
   test_smpl<-smpl_id[-trainIndexSmpl]
