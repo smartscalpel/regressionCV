@@ -171,11 +171,11 @@ groups<-factor(c('train','test'))
 smpl_split_fm<-function(fm,split=0.6){
   cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") starts.\n')
   mdt<-get_mdt(fm)
-  smpl_id<-unique(mdt$smpl.id)
+  smpl<-mdt %>% dplyr::select(smpl.id,target) %>% unique
   trainIndexSmpl <- createDataPartition(smpl$target, p = split,
                                     list = FALSE,
                                     times = 1)
-  test_smpl<-smpl_id[-trainIndexSmpl]
+  test_smpl<-smpl$smpl.id[-trainIndexSmpl]
   fm$grp<-groups[1]
   fm$grp[fm$smpl.id %in% test_smpl]<-groups[2]
   cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") finish.\n')
