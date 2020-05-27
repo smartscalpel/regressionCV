@@ -254,7 +254,7 @@ plot_test_box<-function(fm){
 plot_train_box<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
   test<-fm[fm$was.trained==0,]
-  p<-make_point_plot(test)++geom_boxplot(aes(group=target))+
+  p<-make_point_plot(test)+geom_boxplot(aes(group=target))+
     geom_jitter(aes(x = target, y = predict,color='blue'),data=fm[fm$was.trained==1,])
   cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
   return(p)
