@@ -162,7 +162,7 @@ paretoscale<-function(mz){
 
 get_mdt<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: get_mdt("',fm$fname[1],'") starts.\n')
-  mdt<-fm %>% dplyr::select(spectrumid,patientid,diagnosis,t.id,smpl.id) %>% unique
+  mdt<-fm %>% dplyr::select(spectrumid,patientid,diagnosis,t.id,smpl.id,target) %>% unique
   cat(format(Sys.time(), "%b %d %X"),'Function: get_mdt("',fm$fname[1],'") finish.\n')
   return(mdt)
 }
