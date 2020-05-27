@@ -10,6 +10,7 @@ library(iml)
 library(caret)
 library(randomForest)
 library(doParallel)
+source('./myRF.R')
 
 #path<-'~/Downloads/peak2019.full/'
 dpath<-'/Users/lptolik/Documents/Projects/MSpeaks/data/regression/'
@@ -265,6 +266,10 @@ train_rf<-function(train){
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 3)
+  N<-dim(train)[1]
+  p<-dim(train)[2]-1
+  tunegrid <- expand.grid(.mtry=c(1:(p/3)),.ntree=c(500,1000,1500))
+  
   if(!exists('ncores')){
     ncores<- detectCores()
   }
@@ -272,8 +277,9 @@ train_rf<-function(train){
   cl <- makePSOCKcluster(ncores)
   registerDoParallel(cl)
   rfFitCVpat <- train(target ~ ., data = train,
-                      method = "rf",
+                      method = customRF,
                       trControl = fitCV10,
+                      tuneGrid=tunegrid, 
                       verbose = FALSE)
   stopCluster(cl)
   cat(format(Sys.time(), "%b %d %X"),'Function: train_rf',' finish.\n')
