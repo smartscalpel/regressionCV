@@ -10,6 +10,7 @@ library(iml)
 library(caret)
 library(randomForest)
 library(doParallel)
+source('./myRF.R')
 
 #path<-'~/Downloads/peak2019.full/'
 dpath<-'/Users/lptolik/Documents/Projects/MSpeaks/data/regression/'
@@ -162,20 +163,20 @@ paretoscale<-function(mz){
 
 get_mdt<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: get_mdt("',fm$fname[1],'") starts.\n')
-  mdt<-fm %>% dplyr::select(spectrumid,patientid,diagnosis,t.id,smpl.id) %>% unique
+  mdt<-fm %>% dplyr::select(spectrumid,patientid,diagnosis,t.id,smpl.id,target) %>% unique
   cat(format(Sys.time(), "%b %d %X"),'Function: get_mdt("',fm$fname[1],'") finish.\n')
   return(mdt)
 }
 
 groups<-factor(c('train','test'))
-smpl_split_fm<-function(fm){
+smpl_split_fm<-function(fm,split=0.6){
   cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") starts.\n')
   mdt<-get_mdt(fm)
-  smpl_id<-unique(mdt$smpl.id)
-  trainIndexSmpl <- createDataPartition(smpl_id, p = .6,
+  smpl<-mdt %>% dplyr::select(smpl.id,target) %>% unique
+  trainIndexSmpl <- createDataPartition(smpl$target, p = split,
                                     list = FALSE,
                                     times = 1)
-  test_smpl<-smpl_id[-trainIndexSmpl]
+  test_smpl<-smpl$smpl.id[-trainIndexSmpl]
   fm$grp<-groups[1]
   fm$grp[fm$smpl.id %in% test_smpl]<-groups[2]
   cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") finish.\n')
@@ -265,6 +266,10 @@ train_rf<-function(train){
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 3)
+  N<-dim(train)[1]
+  p<-dim(train)[2]-1
+  tunegrid <- expand.grid(.mtry=c(1:(p/3)),.ntree=c(500,1000,1500))
+  
   if(!exists('ncores')){
     ncores<- detectCores()
   }
@@ -272,8 +277,9 @@ train_rf<-function(train){
   cl <- makePSOCKcluster(ncores)
   registerDoParallel(cl)
   rfFitCVpat <- train(target ~ ., data = train,
-                      method = "rf",
+                      method = customRF,
                       trControl = fitCV10,
+                      tuneGrid=tunegrid, 
                       verbose = FALSE)
   stopCluster(cl)
   cat(format(Sys.time(), "%b %d %X"),'Function: train_rf',' finish.\n')

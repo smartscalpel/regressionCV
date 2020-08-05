@@ -6,9 +6,9 @@ plan <- drake_plan(
     # tuning_setting, mean_value, and model_function.
     transform = cross(
       res=!!c(2),
-      mode=!!c(1,2),
-      mz=!!c(1,2),
-      diag=!!c(3,6),
+      mode=!!c(1),#,2),
+      mz=!!c(2),#,1),
+      diag=!!c(3),#,6),
       .id = c(diag,res,mode,mz),.tag_out=dataset
     )
   ),
@@ -25,7 +25,7 @@ plan <- drake_plan(
     dimSpec)),
   wrtPatStat=write.csv(patStat,file=file_out('patStat.csv')),
   wrtSpecStat=write.csv(specStat,file=file_out('specStat.csv')),
-  smpl_splited_fm=target(smpl_split_fm(fm),transform = map(fm)),# split feature matrix into train/test parts by patientid
+  smpl_splited_fm=target(smpl_split_fm(fm,split=0.75),transform = map(fm)),# split feature matrix into train/test parts by patientid
   normalized_fm=target(normalize(fm=smpl_splited_fm,normtype),transform = cross(smpl_splited_fm,normtype=!!c('None'))),#,'Autoscaling','Pareto'))),# scale feature matrix \cite{vandenBerg:2006hm}
   filter_fm=target(feature_filter(fm=normalized_fm,ftype),transform = cross(normalized_fm,ftype=!!filtertypes)),# reduce feature space 
   # splited_fm=target(transform = map(normalized_fm)),# split feature matrix into train/test parts by spectrumid with respect to percentage
