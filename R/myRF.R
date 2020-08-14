@@ -1,4 +1,4 @@
-customRF <- list(type = "Classification",
+customRF <- list(type = "Regression",
                  library = "randomForest",
                  loop = NULL)
 
