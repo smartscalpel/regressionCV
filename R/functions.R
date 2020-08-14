@@ -10,18 +10,22 @@ library(iml)
 library(caret)
 library(randomForest)
 library(doParallel)
-source('./myRF.R')
+#source('./myRF.R')
 
 #path<-'~/Downloads/peak2019.full/'
 dpath<-'/Users/lptolik/Documents/Projects/MSpeaks/data/regression/'
 #dpath<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
 #dpath<-'~/regression/'
 
+getFreeMem<-function(){
+  #as.numeric(system("awk '/MemFree/ {print $2}' /proc/meminfo", intern=TRUE))/1e6
+  return(0)
+}
 #' Get peak file names from peak files directory.
 #'
 #' @return list of file names for peaks
 get_peaks<-function(dpath){
-  cat(format(Sys.time(), "%b %d %X"),'Function: get_peaks("',dpath,'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_peaks("',dpath,'") starts. Mem:',getFreeMem(),'GB\n')
   fl<-dir(path = dpath,pattern = '*.peak.rds')
   fl<-fl[grep('diag_32',fl,inver=TRUE)]
   idx32<-sapply(fl,function(.x)file.exists(paste0(dpath,sub('diag_[0-9]+\\.','diag_32.',.x))))
