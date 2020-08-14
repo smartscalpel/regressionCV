@@ -93,15 +93,21 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
     idNA<-which(is.na(featureMatrix),arr.ind =TRUE)
     featureMatrix[idNA]<-0
     colnames(featureMatrix)<-paste0('MZ_',round(as.numeric(colnames(featureMatrix)),3))
+    fm<-cbind(md,featureMatrix)
+    tot<-fm$norm.p+fm$tumor.p+fm$necro.p+fm$othr.p
+    idx<-which(tot>=100)
+    fm<-fm[idx,]
+    cat(format(Sys.time(), "%b %d %X"),'feature matrix',dim(featureMatrix),'\n')
+    cat(format(Sys.time(), "%b %d %X"),'filtered matrix',dim(fm),'\n')
     cat(format(Sys.time(), "%b %d %X"),'Function: prepare_feature_matrix("',peaks,'",',norm_shift,') finish.\n')
-    return(cbind(md,featureMatrix))
+    return(fm)
 }
 
 normtypes<-factor(c('None'))#,'Autoscaling','Pareto'))
 filtertypes<-c('None','ZVar','Corr')
 
 feature_filter<-function(fm,ftype){
-  cat(format(Sys.time(), "%b %d %X"),'Function: feature_filter("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',ftype,'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: feature_filter("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',ftype,'") starts. Mem:',getFreeMem(),'GB\n')
   idx<-grep("MZ_.*",names(fm))
   features<-fm[,idx]
   mdt<-fm[,-idx]
