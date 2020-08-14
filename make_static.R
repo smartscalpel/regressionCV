@@ -3,7 +3,7 @@ source("R/static_plan.R")      # creates the drake plan
 library(drake)
 
 # Create the template file. You may have to modify it.
-drake_hpc_template_file("slurm_clustermq.tmpl")
+#drake_hpc_template_file("slurm_clustermq.tmpl")
 
 # Configure clustermq.
 #options(clustermq.scheduler = "slurm", template = "slurm_clustermq.tmpl")
