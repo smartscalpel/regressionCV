@@ -72,10 +72,11 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
     md$norm.p<-as.numeric(as.character(md$norm.p))
     md$tumor.p<-as.numeric(as.character(md$tumor.p))
     md$necro.p<-as.numeric(as.character(md$necro.p))
-    if(grepl('othr.p',names(md))){
+    if(any(grepl('othr.p',names(md)))){
       md$othr.p<-as.numeric(as.character(md$othr.p))
       md$target<-md$norm.p+md$othr.p
     }else{
+      md$othr.p<-0
       md$target<-md$norm.p
     }
     md$target[md$diagnosis==32]<- md$target[md$diagnosis==32]+norm_shift
