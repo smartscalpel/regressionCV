@@ -44,7 +44,7 @@ get_peaks<-function(dpath){
 #' @param peaks -- list of peak files to be converted into feature matrix
 #'
 prepare_feature_matrix<-function(peaks,norm_shift=0){
-  cat(format(Sys.time(), "%b %d %X"),'Function: prepare_feature_matrix("',peaks,'",',norm_shift,') starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: prepare_feature_matrix("',peaks,'",',norm_shift,') starts. Mem:',getFreeMem(),'GB\n')
   # n<-peaks[[1]]
   # cat('prepare_feature_matrix',n)
   # d<-data.frame(name=n,MZ_1=rnorm(10),MZ_2=2*rnorm(10))
@@ -54,7 +54,7 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
       as.data.frame(metaData(p))
     }
     getRDS<-function(f){
-      cat(format(Sys.time(), "%b %d %X"),'Function: getRDS("',f,'") starts.\n')
+      cat(format(Sys.time(), "%b %d %X"),'Function: getRDS("',f,'") starts. Mem:',getFreeMem(),'GB\n')
       res<-try(readRDS(f))
       cat(format(Sys.time(), "%b %d %X"),class(res),'.\n')
       if(inherits(res, "try-error")){
@@ -135,7 +135,7 @@ filter_corr<-function(fm,cutoff = .8){
 #'
 #' @return normalized fm
 normalize<-function(fm,normtype){
-  cat(format(Sys.time(), "%b %d %X"),'Function: normalize(fm,"',normtype,'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: normalize(fm,"',normtype,'") starts. Mem:',getFreeMem(),'GB\n')
   cat('dim(fm)=',dim(fm),'\n')
   #fm<-fml[[1]]
   #cat(names(fm),'\n')
@@ -155,14 +155,14 @@ normalize<-function(fm,normtype){
 }
 
 paretoscale<-function(mz){
-  cat(format(Sys.time(), "%b %d %X"),'Function: paretoscale',' starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: paretoscale',' starts. Mem:',getFreeMem(),'GB\n')
   s<-apply(mz,2,sd)
   a<-apply(mz,2,mean)
   return(scale(mz,center = a,scale = sqrt(s)))
 }
 
 get_mdt<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: get_mdt("',fm$fname[1],'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_mdt("',fm$fname[1],'") starts. Mem:',getFreeMem(),'GB\n')
   mdt<-fm %>% dplyr::select(spectrumid,patientid,diagnosis,t.id,smpl.id,target) %>% unique
   cat(format(Sys.time(), "%b %d %X"),'Function: get_mdt("',fm$fname[1],'") finish.\n')
   return(mdt)
@@ -170,7 +170,7 @@ get_mdt<-function(fm){
 
 groups<-factor(c('train','test'))
 smpl_split_fm<-function(fm,split=0.6){
-  cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: smpl_split_fm("',fm$fname[1],'","',as.character(fm$Norm[1]),'") starts. Mem:',getFreeMem(),'GB\n')
   mdt<-get_mdt(fm)
   smpl<-mdt %>% dplyr::select(smpl.id,target) %>% unique
   trainIndexSmpl <- createDataPartition(smpl$target, p = split,
@@ -184,7 +184,7 @@ smpl_split_fm<-function(fm,split=0.6){
 }
 
 train_model<-function(fm,modeltype){
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'") starts. Mem:',getFreeMem(),'GB\n')
   fm$was.trained<-0
   idx<-grep("(MZ_.*|target)",names(fm))
   trdx<-which(fm$grp==groups[1])
@@ -209,7 +209,7 @@ smpl<-5e6
 test_model<-function(mod){
   fm<-mod$data
   model<-mod$model
-  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") starts. Mem:',getFreeMem(),'GB\n')
   idx<-grep("(MZ_.*|target)",names(fm))
   test<-fm[,idx]
   res<-predict(model,newdata=test)
@@ -230,7 +230,7 @@ make_point_plot<-function(test){
   return(p)
 }
 plot_test_point<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
   test<-fm[fm$grp==groups[2],]
   p<-make_point_plot(test)+geom_point() +
     geom_jitter()
@@ -238,7 +238,7 @@ plot_test_point<-function(fm){
   return(p)
 }
 plot_train_point<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
   test<-fm[fm$was.trained==0,]
   p<-make_point_plot(test)+geom_point()+
     geom_jitter(aes(x = target, y = predict,color='blue'),data=fm[fm$was.trained==1,])
@@ -246,14 +246,14 @@ plot_train_point<-function(fm){
   return(p)
 }
 plot_test_box<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
   test<-fm[fm$grp==groups[2],]
   p<-make_point_plot(test)+geom_boxplot(aes(group=target))
   cat(format(Sys.time(), "%b %d %X"),'Function: plot_test("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
   return(p)
 }
 plot_train_box<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
   test<-fm[fm$was.trained==0,]
   p<-make_point_plot(test)+geom_boxplot(aes(group=target))+
     geom_jitter(aes(x = target, y = predict,color='blue'),data=fm[fm$was.trained==1,])
@@ -262,13 +262,14 @@ plot_train_box<-function(fm){
 }
 
 train_rf<-function(train){
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_rf',' starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_rf',' starts. Mem:',getFreeMem(),'GB\n')
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 3)
   N<-dim(train)[1]
   p<-dim(train)[2]-1
-  tunegrid <- expand.grid(.mtry=c(1:(p/3)),.ntree=c(500,1000,1500))
+  #tunegrid <- expand.grid(.mtry=c(1:(p/3)),.ntree=c(500,1000,1500))
+  tunegrid <- expand.grid(mtry=sample(c(1:(p/3)),size=10))#,.ntree=c(500,1000,1500))
   
   if(!exists('ncores')){
     ncores<- detectCores()
@@ -277,7 +278,7 @@ train_rf<-function(train){
   cl <- makePSOCKcluster(ncores)
   registerDoParallel(cl)
   rfFitCVpat <- train(target ~ ., data = train,
-                      method = customRF,
+                      method = "rf",#customRF,
                       trControl = fitCV10,
                       tuneGrid=tunegrid, 
                       verbose = FALSE)
@@ -287,7 +288,7 @@ train_rf<-function(train){
 }
 
 train_xgb<-function(train){
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_xgb',' starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_xgb',' starts. Mem:',getFreeMem(),'GB\n')
   fitCV10<-trainControl(method = "repeatedcv",
                         number = 10,
                         repeats = 3)
@@ -307,7 +308,7 @@ train_xgb<-function(train){
 }
 
 train_trigger<-function(fm){
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_trigger',' starts.\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_trigger',' starts. Mem:',getFreeMem(),'GB\n')
   return(length(unique(fm$norm.p))>2)
 }
 #' Prepare panel of three PCA plots: 1-2, 2-3, 1-3
