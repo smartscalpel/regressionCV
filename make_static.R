@@ -11,6 +11,7 @@ library(drake)
 
 make(
   plan, #max_expand = 1,# defined in R/plan.R
+  #trigger = trigger(command = FALSE, depend = FALSE, file = FALSE),
   verbose = 2 ,cache_log_file = TRUE 
   # ,parallelism = "clustermq",
   # jobs = 8,
