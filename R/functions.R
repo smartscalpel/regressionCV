@@ -330,23 +330,51 @@ xgb_importance<-function(mod){
 
 xgb_plot_importance<-function(imp){
   cat(format(Sys.time(), "%b %d %X"),'Function: xgb_plot_importance starts. \n')
+  fm<-imp$data
+  model<-imp$model$finalModel
+  imp_mat<-imp$importance
   p<-xgb.ggplot.importance(imp_mat, rel_to_first = TRUE, xlab = "Relative importance")->p
   cat(format(Sys.time(), "%b %d %X"),'Function: xgb_plot_importance  finish. \n')
   return(p)
 }
-
-get_shap_dep_plot<-function(imp){
-  cat(format(Sys.time(), "%b %d %X"),'Function: get_xgb.shap_plot starts. \n')
+get_shap_values<-function(imp){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values starts. \n')
   fm<-imp$data
+  #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values dim(fm)',dim(fm),' \n')
   model<-imp$model$finalModel
+  #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values length(model)',length(model),' \n')
   imp<-imp$importance
+  #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values dim(imp)',dim(imp),' \n')
   idx<-grep("(MZ_.*)",names(fm))
   tm<-as.matrix(fm[,idx])
-  shap_values <- shap.values(xgb_model = model, X_train = tm)
-  shap_long <- SHAPforxgboost::shap.prep(xgb_model = model, X_train = tm)
+  #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values dim(tm)',dim(tm),' \n')
+  shap_values <- SHAPforxgboost::shap.values(xgb_model = model, X_train = tm)
+  shap_values$tm<-tm
+  return(shap_values)
+}
+get_shap_dep_plot<-function(shap_values){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_dep_plot starts. \n')
+  shap_values$tm->tm
+  shap_long <- SHAPforxgboost::shap.prep(shap_contrib = shap_values$shap_score, X_train = tm)
   fig_list <- lapply(names(shap_values$mean_shap_score)[1:16],
-  shap.plot.dependence, data_long = shap_long)
+                     shap.plot.dependence, data_long = shap_long)
   p<-gridExtra::grid.arrange(grobs = fig_list, ncol = 4)
+  return(p)
+}
+get_shap_plot_data<-function(shap_values){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_plot_data starts. \n')
+  plot_data <- shap.prep.stack.data(shap_contrib = shap_values$shap_score, top_n = 10, n_groups = 10)
+  return(plot_data)
+}
+get_shap_force_plot<-function(plot_data){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_force_plot starts. \n')
+  p<-shap.plot.force_plot(plot_data,zoom_in = FALSE)
+  return(p)
+}
+
+get_shap_force_group_plot<-function(plot_data){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_force_group_plot starts. \n')
+  p<-shap.plot.force_plot_bygroup(plot_data)
   return(p)
 }
 
