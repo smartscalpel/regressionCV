@@ -10,6 +10,7 @@ library(iml)
 library(caret)
 library(randomForest)
 library(doParallel)
+library(SHAPforxgboost)
 #source('./myRF.R')
 
 #path<-'~/Downloads/peak2019.full/'
@@ -107,7 +108,7 @@ prepare_feature_matrix<-function(peaks,norm_shift=0){
     return(fm)
 }
 
-normtypes<-factor(c('None'))#,'Autoscaling','Pareto'))
+normtypes<-factor(c('None','Pareto'))#,'Autoscaling'))
 filtertypes<-c('None','ZVar','Corr')
 
 feature_filter<-function(fm,ftype){
