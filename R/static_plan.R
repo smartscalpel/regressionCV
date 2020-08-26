@@ -26,18 +26,18 @@ plan <- drake_plan(
   wrtPatStat=write.csv(patStat,file=file_out('patStat.csv')),
   wrtSpecStat=write.csv(specStat,file=file_out('specStat.csv')),
   smpl_splited_fm=target(smpl_split_fm(fm,split=0.75),transform = map(fm)),# split feature matrix into train/test parts by patientid
-  normalized_fm=target(normalize(fm=smpl_splited_fm,normtype),transform = cross(smpl_splited_fm,normtype=!!c('None'))),#,'Autoscaling','Pareto'))),# scale feature matrix \cite{vandenBerg:2006hm}
+  normalized_fm=target(normalize(fm=smpl_splited_fm,normtype),transform = cross(smpl_splited_fm,normtype=!!c('None','Pareto'))),#,'Autoscaling','Pareto'))),# scale feature matrix \cite{vandenBerg:2006hm}
   filter_fm=target(feature_filter(fm=normalized_fm,ftype),transform = cross(normalized_fm,ftype=!!c('None','ZVar','Corr'))),# reduce feature space 
   # splited_fm=target(transform = map(normalized_fm)),# split feature matrix into train/test parts by spectrumid with respect to percentage
   # pca=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make PCA plots for transformed feature matrices
   # umap=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make umap plots for transformed feature matrices
-  rf_cv10=target(train_model(fm=filter_fm,modeltype='rf'),transform = map(filter_fm)),# train regression model with CV10
+  rf_cv10=target(train_model(fm=filter_fm,modeltype='rf'),transform = map(filter_fm)),#,trigger = trigger(condition =FALSE)),# train regression model with CV10
   test_rf=target(test_model(rf_cv10),transform = map(rf_cv10)),
   plot_rf_point=target(plot_test_point(fm=test_rf),transform = map(test_rf)),
   plot_rf_box=target(plot_test_box(fm=test_rf),transform = map(test_rf)),
   plot_rf_pointT=target(plot_train_point(fm=test_rf),transform = map(test_rf)),
   plot_rf_boxT=target(plot_train_box(fm=test_rf),transform = map(test_rf)),
-  xgb_cv10=target(train_model(fm=filter_fm,modeltype='xgb'),transform = map(filter_fm)),# train regression model with CV10
+  xgb_cv10=target(train_model(fm=filter_fm,modeltype='xgb'),transform = map(filter_fm)),#,trigger = trigger(condition =FALSE)),# train regression model with CV10
   test_xgb=target(test_model(xgb_cv10),transform = map(xgb_cv10)),
   plot_xgb_point=target(plot_test_point(fm=test_xgb),transform = map(test_xgb)),
   plot_xgb_box=target(plot_test_box(fm=test_xgb),transform = map(test_xgb)),
