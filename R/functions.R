@@ -318,6 +318,72 @@ train_xgb<-function(train){
   return(xboostFitCVspec)
 }
 
+xgb_importance<-function(mod){
+  cat(format(Sys.time(), "%b %d %X"),'Function: xgb_importance starts. \n')
+  fm<-mod$data
+  model<-mod$model
+  xgb.importance(model =model$finalModel)->imp_mat
+  cat(format(Sys.time(), "%b %d %X"),'Function: xgb_importance  finish. \n')
+  return(list(data=fm,model=model,importance=imp_mat))
+}
+
+xgb_plot_importance<-function(imp){
+  cat(format(Sys.time(), "%b %d %X"),'Function: xgb_plot_importance starts. \n')
+  p<-xgb.ggplot.importance(imp_mat, rel_to_first = TRUE, xlab = "Relative importance")->p
+  cat(format(Sys.time(), "%b %d %X"),'Function: xgb_plot_importance  finish. \n')
+  return(p)
+}
+
+get_shap_dep_plot<-function(imp){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_xgb.shap_plot starts. \n')
+  fm<-imp$data
+  model<-imp$model$finalModel
+  imp<-imp$importance
+  idx<-grep("(MZ_.*)",names(fm))
+  tm<-as.matrix(fm[,idx])
+  shap_values <- shap.values(xgb_model = model, X_train = tm)
+  shap_long <- SHAPforxgboost::shap.prep(xgb_model = model, X_train = tm)
+  fig_list <- lapply(names(shap_values$mean_shap_score)[1:16],
+  shap.plot.dependence, data_long = shap_long)
+  p<-gridExtra::grid.arrange(grobs = fig_list, ncol = 4)
+  return(p)
+}
+
+get_xgb.shap_plot<-function(imp){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_xgb.shap_plot starts. \n')
+  fm<-imp$data
+  model<-imp$model$finalModel
+  imp<-imp$importance
+  idx<-grep("(MZ_.*)",names(fm))
+  tm<-as.matrix(fm[,idx])
+  contr<-predict(model,newdata=tm, predcontrib = TRUE)
+  shap<-xgb.plot.shap(tm,contr,model=model$finalModel,
+                      features = imp$Feature[1:10],
+                      plot = FALSE)
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_xgb.shap_plot  finish. \n')
+  return(shap)
+}
+
+get_shap_plot<-function(imp){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_plot starts. \n')
+  fm<-imp$data
+  model<-imp$model$finalModel
+  imp<-imp$importance
+  idx<-grep("(MZ_.*)",names(fm))
+  tm<-as.matrix(fm[,idx])
+  sh_res<-shap.score.rank(xgb_model = model, 
+                  X_train =tm,
+                  shap_approx = F
+  )
+  sh_long<-shap.prep(shap = sh_res,
+            X_train = tm , 
+            top_n = 10
+  )
+  p<-plot.shap.summary(data_long = sh_long)
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_plot  finish. \n')
+  return(p)
+  }
+
 train_trigger<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_trigger',' starts. Mem:',getFreeMem(),'GB\n')
   return(length(unique(fm$norm.p))>2)
