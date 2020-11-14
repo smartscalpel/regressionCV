@@ -130,14 +130,22 @@ feature_filter<-function(fm,ftype){
 
 filter_nzv<-function(fm){
   nzv <- nearZeroVar(fm)
+  if(length(nzv)>0){
   res<-fm[,-nzv]
+  }else{
+    res<-fm
+  }
   return(res)
 }
 filter_corr<-function(fm,cutoff = .8){
   fm1<-filter_nzv(fm)
   descrCor <- cor(fm1)
   highlyCorDescr <- findCorrelation(descrCor, cutoff = cutoff)
-  res<-fm1[,-highlyCorDescr]
+  if(length(highlyCorDescr)>0){
+    res<-fm1[,-highlyCorDescr]
+  }else{
+    res<-fm1
+  }
   return(res)
 }
 #' Title
