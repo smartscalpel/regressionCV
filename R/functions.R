@@ -280,6 +280,85 @@ plot_train_box<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
   return(p)
 }
+#### Spectrum aggregation #####
+make_mean_spectrum<-function(tst){
+  spec_tst<-ddply(tst,.(spectrumid,patientid,diagnosis,smpl.id,t.id,norm.p,tumor.p,necro.p,norm.type,othr.p,target,was.trained),summarise,min.pred=min(predict),mean.pred=mean(predict),median.pred=median(predict),max.pred=max(predict))
+  return(spec_tst)
+}
+#### Spectrum median plot #####
+make_median_spectrum_point_plot<-function(test){
+  my.formula <- y ~ x
+  p <- ggplot(data = test, aes(x = target, y = median.pred)) +
+    geom_smooth(method = "lm", se=FALSE, color="black", formula = my.formula) +
+    stat_poly_eq(formula = my.formula,
+                 eq.with.lhs = "italic(hat(y))~`=`~",
+                 aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
+                 parse = TRUE)
+  return(p)
+}
+plot_median_spectrum_test_box<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_median_spectrum_test_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  spec_tst<-make_mean_spectrum(fm)
+  test<-spec_tst[spec_tst$was.trained==0,]
+  p<-make_median_spectrum_point_plot(test)+geom_boxplot(aes(group=target))
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_median_spectrum_test_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+plot_median_spectrum_train_box<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_median_spectrum_train_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  spec_tst<-make_mean_spectrum(fm)
+  test<-spec_tst[spec_tst$was.trained==0,]
+  p<-make_median_spectrum_point_plot(test)+geom_boxplot(aes(group=target))+
+    geom_jitter(aes(x = target, y = median.pred),color='blue',data=spec_tst[spec_tst$was.trained==1,])
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_median_spectrum_train_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+
+#### Spectrum mean plot #####
+make_mean_spectrum_point_plot<-function(test){
+  my.formula <- y ~ x
+  p <- ggplot(data = test, aes(x = target, y = mean.pred)) +
+    geom_smooth(method = "lm", se=FALSE, color="black", formula = my.formula) +
+    stat_poly_eq(formula = my.formula,
+                 eq.with.lhs = "italic(hat(y))~`=`~",
+                 aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
+                 parse = TRUE)
+  return(p)
+}
+plot_mean_spectrum_test_box<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_mean_spectrum_test_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  spec_tst<-make_mean_spectrum(fm)
+  test<-spec_tst[spec_tst$was.trained==0,]
+  p<-make_mean_spectrum_point_plot(test)+geom_boxplot(aes(group=target))
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_mean_spectrum_test_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+plot_mean_spectrum_train_box<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_mean_spectrum_train_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  spec_tst<-make_mean_spectrum(fm)
+  test<-spec_tst[spec_tst$was.trained==0,]
+  p<-make_mean_spectrum_point_plot(test)+geom_boxplot(aes(group=target))+
+    geom_jitter(aes(x = target, y = mean.pred),color='blue',data=spec_tst[spec_tst$was.trained==1,])
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_mean_spectrum_train_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+
+
+plot_train_smpl_box<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train_smpl_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  sum_tst<-ddply(fm,.(smpl.id,target,was.trained),summarise,min.pred=min(predict),mean.pred=mean(predict),max.pred=max(predict))
+  fm$samples<-factor(fm$smpl.id,levels = sum_tst$smpl.id[order(sum_tst$target)])
+  sum_tst$samples<-factor(sum_tst$smpl.id,levels = sum_tst$smpl.id[order(sum_tst$target)])
+  p <- ggplot(fm, aes(x=samples, y=predict,color=factor(was.trained))) +
+    geom_boxplot()+
+    geom_point(data=sum_tst,
+               aes(x=samples, y=target),
+               color='black',
+               shape='+',size=6)+
+    coord_flip()
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_train_smpl_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
 
 train_rf<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_rf',' starts. Mem:',getFreeMem(),'GB\n')

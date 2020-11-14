@@ -37,12 +37,14 @@ plan <- drake_plan(
   plot_rf_box=target(plot_test_box(fm=test_rf),transform = map(test_rf)),
   plot_rf_pointT=target(plot_train_point(fm=test_rf),transform = map(test_rf)),
   plot_rf_boxT=target(plot_train_box(fm=test_rf),transform = map(test_rf)),
+  plot_rf_boxSmpl=target(plot_train_smpl_box(fm=test_rf),transform = map(test_rf)),
   xgb_cv10=target(train_model(fm=filter_fm,modeltype='xgb'),transform = map(filter_fm)),#,trigger = trigger(condition =FALSE)),# train regression model with CV10
   test_xgb=target(test_model(xgb_cv10),transform = map(xgb_cv10)),
   plot_xgb_point=target(plot_test_point(fm=test_xgb),transform = map(test_xgb)),
   plot_xgb_box=target(plot_test_box(fm=test_xgb),transform = map(test_xgb)),
   plot_xgb_pointT=target(plot_train_point(fm=test_xgb),transform = map(test_xgb)),
   plot_xgb_boxT=target(plot_train_box(fm=test_xgb),transform = map(test_xgb)),
+  plot_xgb_boxSmpl=target(plot_train_smpl_box(fm=test_xgb),transform = map(test_xgb)),
   save_plot_xgb_point = target(ggsave(
     filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_point.pdf',
                                 diag,res,mode,mz,normtype,ftype,"xgb")),
@@ -71,6 +73,13 @@ plan <- drake_plan(
     width = 8,
     height = 8
   ),transform = map(plot_rf_pointT)),
+  save_plot_rf_boxSmpl = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_box.test.smpl.pdf',
+                                diag,res,mode,mz,normtype,ftype,"rf")),
+    plot = plot_rf_boxSmpl,
+    width = 8,
+    height = 8
+  ),transform = map(plot_rf_boxSmpl)),
   save_plot_xgb_box = target(ggsave(
     filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_box.pdf',
                                 diag,res,mode,mz,normtype,ftype,"xgb")),
@@ -99,6 +108,80 @@ plan <- drake_plan(
     width = 8,
     height = 8
   ),transform = map(plot_rf_boxT)),
+  save_plot_xgb_boxSmpl = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_box.test.smpl.pdf',
+                                diag,res,mode,mz,normtype,ftype,"xgb")),
+    plot = plot_xgb_boxSmpl,
+    width = 8,
+    height = 8
+  ),transform = map(plot_xgb_boxSmpl)),
+  #### Spectrum median plots ####
+  plot_median_rf_boxT=target(plot_median_spectrum_test_box(fm=test_rf),transform = map(test_rf)),
+  plot_median_rf_box=target(plot_median_spectrum_train_box(fm=test_rf),transform = map(test_rf)),
+  save_median_plot_rf_boxT = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_median_box.pdf',
+                                diag,res,mode,mz,normtype,ftype,"rf")),
+    plot = plot_median_rf_boxT,
+    width = 8,
+    height = 8
+  ),transform = map(plot_median_rf_boxT)),
+  save_median_plot_rf_box = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_median_box.train.pdf',
+                                diag,res,mode,mz,normtype,ftype,"rf")),
+    plot = plot_median_rf_box,
+    width = 8,
+    height = 8
+  ),transform = map(plot_median_rf_box)),
+  plot_median_xgb_boxT=target(plot_median_spectrum_test_box(fm=test_xgb),transform = map(test_xgb)),
+  plot_median_xgb_box=target(plot_median_spectrum_train_box(fm=test_xgb),transform = map(test_xgb)),
+  save_median_plot_xgb_boxT = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_median_box.pdf',
+                                diag,res,mode,mz,normtype,ftype,"xgb")),
+    plot = plot_median_xgb_boxT,
+    width = 8,
+    height = 8
+  ),transform = map(plot_median_xgb_boxT)),
+  save_median_plot_xgb_box = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_median_box.train.pdf',
+                                diag,res,mode,mz,normtype,ftype,"xgb")),
+    plot = plot_median_xgb_box,
+    width = 8,
+    height = 8
+  ),transform = map(plot_median_xgb_box)),
+  #### Spectrum mean plots ####
+  plot_mean_rf_boxT=target(plot_mean_spectrum_test_box(fm=test_rf),transform = map(test_rf)),
+  plot_mean_rf_box=target(plot_mean_spectrum_train_box(fm=test_rf),transform = map(test_rf)),
+  save_mean_plot_rf_boxT = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_mean_box.pdf',
+                                diag,res,mode,mz,normtype,ftype,"rf")),
+    plot = plot_mean_rf_boxT,
+    width = 8,
+    height = 8
+  ),transform = map(plot_mean_rf_boxT)),
+  save_mean_plot_rf_box = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_mean_box.train.pdf',
+                                diag,res,mode,mz,normtype,ftype,"rf")),
+    plot = plot_mean_rf_box,
+    width = 8,
+    height = 8
+  ),transform = map(plot_mean_rf_box)),
+  plot_mean_xgb_boxT=target(plot_mean_spectrum_test_box(fm=test_xgb),transform = map(test_xgb)),
+  plot_mean_xgb_box=target(plot_mean_spectrum_train_box(fm=test_xgb),transform = map(test_xgb)),
+  save_mean_plot_xgb_boxT = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_mean_box.pdf',
+                                diag,res,mode,mz,normtype,ftype,"xgb")),
+    plot = plot_mean_xgb_boxT,
+    width = 8,
+    height = 8
+  ),transform = map(plot_mean_xgb_boxT)),
+  save_mean_plot_xgb_box = target(ggsave(
+    filename = file_out(sprintf('peak2019.diag_%d.res_%d.mode_%d.mz_%d.ftype_%s.norm_%s.cv10.%s.plot_mean_box.train.pdf',
+                                diag,res,mode,mz,normtype,ftype,"xgb")),
+    plot = plot_mean_xgb_box,
+    width = 8,
+    height = 8
+  ),transform = map(plot_mean_xgb_box)),
+  #### IML ####  
   get_xgb_imp=target(xgb_importance(mod=xgb_cv10),transform = map(xgb_cv10)),
   plot_xgb_imp=target(xgb_plot_importance(imp=get_xgb_imp),transform = map(get_xgb_imp)),
   save_plot_xgb_imp = target(ggsave(
