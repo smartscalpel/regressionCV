@@ -203,10 +203,14 @@ smpl_split_fm<-function(fm,split=0.6){
   return(fm)
 }
 
-train_model<-function(fm,modeltype){
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'") starts. Mem:',getFreeMem(),'GB\n')
+train_model<-function(fm,modeltype,use.rt=FALSE){
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'",use.rt=',use.rt,'") starts. Mem:',getFreeMem(),'GB\n')
   fm$was.trained<-0
-  idx<-grep("(MZ_.*|target)",names(fm))
+  if(use.rt){
+    idx<-grep("(MZ_.*|target|rt)",names(fm))
+  }else{
+    idx<-grep("(MZ_.*|target)",names(fm))
+  }
   trdx<-which(fm$grp==groups[1])
   if(smpl<length(trdx)){
   jdx<-trdx[sample.int(length(trdx),size = smpl)]
@@ -230,8 +234,12 @@ test_model<-function(mod){
   fm<-mod$data
   model<-mod$model
   cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") starts. Mem:',getFreeMem(),'GB\n')
-  idx<-grep("(MZ_.*|target)",names(fm))
-  test<-fm[,idx]
+  idx<-match(model$finalModel$xNames,names(fm))
+  if(any(is.na(idx))){
+    i<-which(is.na(idx))
+    stop('Model parameters [',model$finalModel$xNames[i],'] are missing from the dataset.\n')
+  }
+  test<-fm[,c('target',names(fm)[idx])]
   res<-predict(model,newdata=test)
   fm$predict<-res
   fm$method<-model$method
@@ -432,7 +440,11 @@ get_shap_values<-function(imp){
   #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values length(model)',length(model),' \n')
   imp<-imp$importance
   #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values dim(imp)',dim(imp),' \n')
-  idx<-grep("(MZ_.*)",names(fm))
+  idx<-match(model$xNames,names(fm))
+  if(any(is.na(idx))){
+    i<-which(is.na(idx))
+    stop('Model parameters [',model$xNames[i],'] are missing from the dataset.\n')
+  }
   tm<-as.matrix(fm[,idx])
   #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values dim(tm)',dim(tm),' \n')
   shap_values <- SHAPforxgboost::shap.values(xgb_model = model, X_train = tm)
@@ -470,7 +482,11 @@ get_xgb.shap_plot<-function(imp){
   fm<-imp$data
   model<-imp$model$finalModel
   imp<-imp$importance
-  idx<-grep("(MZ_.*)",names(fm))
+  idx<-match(model$xNames,names(fm))
+  if(any(is.na(idx))){
+    i<-which(is.na(idx))
+    stop('Model parameters [',model$xNames[i],'] are missing from the dataset.\n')
+  }
   tm<-as.matrix(fm[,idx])
   contr<-predict(model,newdata=tm, predcontrib = TRUE)
   shap<-xgb.plot.shap(tm,contr,model=model$finalModel,
@@ -485,7 +501,11 @@ get_shap_plot<-function(imp){
   fm<-imp$data
   model<-imp$model$finalModel
   imp<-imp$importance
-  idx<-grep("(MZ_.*)",names(fm))
+  idx<-match(model$xNames,names(fm))
+  if(any(is.na(idx))){
+    i<-which(is.na(idx))
+    stop('Model parameters [',model$xNames[i],'] are missing from the dataset.\n')
+  }
   tm<-as.matrix(fm[,idx])
   sh_res<-shap.score.rank(xgb_model = model, 
                   X_train =tm,
