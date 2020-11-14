@@ -413,7 +413,7 @@ train_xgb<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_xgb',' finish.\n')
   return(xboostFitCVspec)
 }
-
+#### IML ####
 xgb_importance<-function(mod){
   cat(format(Sys.time(), "%b %d %X"),'Function: xgb_importance starts. \n')
   fm<-mod$data
@@ -520,10 +520,58 @@ get_shap_plot<-function(imp){
   return(p)
   }
 
+#### Variational analysis ####
+get_err<-function(imp){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_err starts. \n')
+  fm<-imp$data
+  mod<-imp$model
+  model<-mod$finalModel
+  imp<-imp$importance
+  idx<-match(model$xNames,names(fm))
+  if(any(is.na(idx))){
+    i<-which(is.na(idx))
+    stop('Model parameters [',model$xNames[i],'] are missing from the dataset.\n')
+  }
+  tm<-as.matrix(fm[,idx])
+  res<-predict(model,newdata=tm)
+  err<-fm$target-res
+  fm$predict<-res
+  fm$err<-err
+  p<-list(data=fm,model=mod,importance=imp)
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_err finish. \n')
+  return(p)
+}
+get_outliers<-function(errl,dev=3.0){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_outliers starts. \n')
+  fm<-errl$data
+  idxLow<-which(err<(mean(err)-dev*sd(err)))
+  idxHigh<-which(err>(mean(err)+dev*sd(err)))
+  fm1<-fm[c(idxLow,idxLow),]
+  errl$data<-fm1
+  return(errl)
+}
 train_trigger<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_trigger',' starts. Mem:',getFreeMem(),'GB\n')
   return(length(unique(fm$norm.p))>2)
 }
+
+#### Train reduced model ####
+get_reduced_fm<-function(imp,threshold=10){
+  cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values starts. \n')
+  fm<-imp$data
+  shap_values <- get_shap_values(imp)
+  idxMZ<-match(imp$model$finalModel$xNames,names(fm))
+  shval<-cbind(fm[,-idxMZ],shap_values$shap_score)
+  idx<-match(imp$model$finalModel$xNames,names(shval))
+  sh_mean<-ddply(shval,.(target),function(.x){apply(.x[,idx],2,mean)})
+  sh_mean_long<-melt(sh_mean,id='target')
+  idxOpt<-match(as.character(unique(
+    sh_mean_long$variable[abs(sh_mean_long$value)>threshold])),
+    names(fm))
+  fm_opt<-cbind(fm[,-idxMZ],fm[,idxOpt])
+  return(fm_opt)
+}
+
 #' Prepare panel of three PCA plots: 1-2, 2-3, 1-3
 #'
 #' @param fm feature matrix to plot
