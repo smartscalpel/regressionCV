@@ -363,7 +363,7 @@ plot_tcp_smpl_box<-function(fm,theme=theme_grey(base_size=14),palette=NULL){
                aes(x=samples, y=target),
                color='black',
                shape='+',size=6)+
-    coord_flip()+xlab('Predicted TCP')+ylab('Sample ID')
+    coord_flip()+ylab('Predicted TCP')+xlab('Sample ID')
   p<-p+theme
   if(!is.null(palette)){
     p<-p+scale_colour_brewer(type = "seq", palette =palette)
