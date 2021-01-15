@@ -13,15 +13,14 @@ library(randomForest)
 library(doParallel)
 library(SHAPforxgboost)
 
-#path<-'~/Downloads/peak2019.full/'
-dpath<-'/Users/lptolik/Documents/Projects/MSpeaks/data/regression/'
-#dpath<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
-#dpath<-'~/regression/'
+#### Define your own path to the dataset ####
+dpath<-'./regression/'
 
 getFreeMem<-function(){
   #as.numeric(system("awk '/MemFree/ {print $2}' /proc/meminfo", intern=TRUE))/1e6
   return(0)
 }
+
 #' Get peak file names from peak files directory.
 #'
 #' @return list of file names for peaks
@@ -48,71 +47,86 @@ get_peaks<-function(dpath){
 #'
 #' @param peaks -- list of peak files to be converted into feature matrix
 #'
-prepare_feature_matrix<-function(peaks,norm_shift=0){
+prepare_feature_matrix<-function(peaks,norm_shift=0,monoisotopic=FALSE,size=3L:10L){
   cat(format(Sys.time(), "%b %d %X"),'Function: prepare_feature_matrix("',peaks,'",',norm_shift,') starts. Mem:',getFreeMem(),'GB\n')
   # n<-peaks[[1]]
   # cat('prepare_feature_matrix',n)
   # d<-data.frame(name=n,MZ_1=rnorm(10),MZ_2=2*rnorm(10))
   # #write.csv(d,paste0(n,'.csv'))
   # return(d)
-    getMD<-function(p){
-      as.data.frame(metaData(p))
-    }
-    getRDS<-function(f){
-      cat(format(Sys.time(), "%b %d %X"),'Function: getRDS("',f,'") starts. Mem:',getFreeMem(),'GB\n')
-      res<-try(readRDS(f))
-      cat(format(Sys.time(), "%b %d %X"),class(res),'.\n')
-      if(inherits(res, "try-error")){
-        return(list())
-      }else{
-        return(res)
-      }
-    }
-    norm<-sub('diag_[0-9]+\\.','diag_32.',peaks)
-    idx<-sapply(norm,file.exists)
-    l<-lapply(c(peaks,norm[idx]),getRDS)
-    peaksL<-do.call(c,l)
-    dl<-lapply(peaksL, getMD)
-    md<-do.call(rbind,dl)
-    md$norm.p<-as.numeric(as.character(md$norm.p))
-    md$tumor.p<-as.numeric(as.character(md$tumor.p))
-    md$necro.p<-as.numeric(as.character(md$necro.p))
-    if(any(grepl('othr.p',names(md)))){
-      md$othr.p<-as.numeric(as.character(md$othr.p))
-      md$target<-md$norm.p+md$othr.p
+  getMD<-function(p){
+    as.data.frame(metaData(p))
+  }
+  getRDS<-function(f){
+    cat(format(Sys.time(), "%b %d %X"),'Function: getRDS("',f,'") starts. Mem:',getFreeMem(),'GB\n')
+    res<-try(readRDS(f))
+    cat(format(Sys.time(), "%b %d %X"),class(res),'.\n')
+    if(inherits(res, "try-error")){
+      return(list())
     }else{
-      md$othr.p<-0
-      md$target<-md$norm.p
+      return(res)
     }
-    md$target[md$diagnosis==32]<- md$target[md$diagnosis==32]+norm_shift
-    md$fname<-basename(peaks[1])
-    wf<-determineWarpingFunctions(peaksL,
-                                  method="lowess",
-                                  plot=FALSE,minFrequency=0.05)
-    aPeaks<-warpMassPeaks(peaksL,wf)
-    bPeaks <- binPeaks(aPeaks, tolerance=2e-3)
-    fpeaks <- filterPeaks(bPeaks,
-                          labels=md$diag,
-                          minFrequency=0.25, mergeWhitelists=TRUE)
-    featureMatrix <- intensityMatrix(fpeaks)
-    idNA<-which(is.na(featureMatrix),arr.ind =TRUE)
-    featureMatrix[idNA]<-0
-    colnames(featureMatrix)<-paste0('MZ_',round(as.numeric(colnames(featureMatrix)),3))
-    fm<-cbind(md,featureMatrix)
-    tot<-fm$norm.p+fm$tumor.p+fm$necro.p+fm$othr.p
-    idx<-which(tot>=100)
-    fm<-fm[idx,]
-    cat(format(Sys.time(), "%b %d %X"),'feature matrix',dim(featureMatrix),'\n')
-    cat(format(Sys.time(), "%b %d %X"),'filtered matrix',dim(fm),'\n')
-    cat(format(Sys.time(), "%b %d %X"),'Function: prepare_feature_matrix("',peaks,'",',norm_shift,') finish.\n')
-    return(fm)
+  }
+  norm<-sub('diag_[0-9]+\\.','diag_32.',peaks)
+  idx<-sapply(norm,file.exists)
+  l<-lapply(c(peaks,norm[idx]),getRDS)
+  peaksL<-do.call(c,l)
+  if(all(grepl('res_2',peaks))){
+    tol=5e-4
+  }else{
+    tol=5e-5
+  }
+  if(monoisotopic){
+    if(all(grepl('mode_2',peaks))){
+      K=TRUE
+      Cl=FALSE
+    }else{
+      K=FALSE
+      Cl=TRUE
+    }
+    peaksL<-myPeakList(peaksL, minCor=0.95, tolerance=tol, size=size,Cl=Cl,K=K) 
+  }
+  dl<-lapply(peaksL, getMD)
+  md<-do.call(rbind,dl)
+  md$norm.p<-as.numeric(as.character(md$norm.p))
+  md$tumor.p<-as.numeric(as.character(md$tumor.p))
+  md$necro.p<-as.numeric(as.character(md$necro.p))
+  if(any(grepl('othr.p',names(md)))){
+    md$othr.p<-as.numeric(as.character(md$othr.p))
+    md$target<-md$norm.p+md$othr.p
+  }else{
+    md$othr.p<-0
+    md$target<-md$norm.p
+  }
+  md$target[md$diagnosis==32]<- md$target[md$diagnosis==32]+norm_shift
+  md$fname<-basename(peaks[1])
+  wf<-determineWarpingFunctions(peaksL,
+                                method="lowess",
+                                plot=FALSE,minFrequency=0.05)
+  aPeaks<-warpMassPeaks(peaksL,wf)
+  bPeaks <- binPeaks(aPeaks,  method="strict",tolerance=tol)
+  fpeaks <- filterPeaks(bPeaks,
+                        labels=md$diag,
+                        minFrequency=0.25, mergeWhitelists=TRUE)
+  featureMatrix <- intensityMatrix(fpeaks)
+  idNA<-which(is.na(featureMatrix),arr.ind =TRUE)
+  featureMatrix[idNA]<-0
+  colnames(featureMatrix)<-paste0('MZ_',round(as.numeric(colnames(featureMatrix)),3))
+  fm<-cbind(md,featureMatrix)
+  tot<-fm$norm.p+fm$tumor.p+fm$necro.p+fm$othr.p
+  idx<-which(tot>=100)
+  fm<-fm[idx,]
+  cat(format(Sys.time(), "%b %d %X"),'feature matrix',dim(featureMatrix),'\n')
+  cat(format(Sys.time(), "%b %d %X"),'filtered matrix',dim(fm),'\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: prepare_feature_matrix("',peaks,'",',norm_shift,') finish.\n')
+  return(fm)
 }
 
-normtypes<-factor(c('None','Pareto'))#,'Autoscaling'))
-filtertypes<-c('None','ZVar','Corr')
+#normtypes<-factor(c('None'))#,'Pareto','Autoscaling'))
+#filtertypes<-c('None')#,'ZVar','Corr')
 
 feature_filter<-function(fm,ftype){
-  cat(format(Sys.time(), "%b %d %X"),'Function: feature_filter("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',ftype,'") starts. Mem:',getFreeMem(),'GB\n')
+  cat(format(Sys.time(), "%b %d %X"),'Function: feature_filter("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',ftype,'") starts.\n')
   idx<-grep("MZ_.*",names(fm))
   features<-fm[,idx]
   mdt<-fm[,-idx]
@@ -129,15 +143,18 @@ feature_filter<-function(fm,ftype){
 }
 
 filter_nzv<-function(fm){
+  cat(format(Sys.time(), "%b %d %X"),'Function: filter_nzv; dim(fm)=',dim(fm),'\n')
   nzv <- nearZeroVar(fm)
   if(length(nzv)>0){
-  res<-fm[,-nzv]
+    res<-fm[,-nzv]
   }else{
     res<-fm
   }
+  cat(format(Sys.time(), "%b %d %X"),'Function: filter_nzv; length(nzv)=',length(nzv),'; dim(res)=',dim(res),'\n')
   return(res)
 }
 filter_corr<-function(fm,cutoff = .8){
+  cat(format(Sys.time(), "%b %d %X"),'Function: filter_corr; dim(fm)=',dim(fm),'\n')
   fm1<-filter_nzv(fm)
   descrCor <- cor(fm1)
   highlyCorDescr <- findCorrelation(descrCor, cutoff = cutoff)
@@ -146,6 +163,7 @@ filter_corr<-function(fm,cutoff = .8){
   }else{
     res<-fm1
   }
+  cat(format(Sys.time(), "%b %d %X"),'Function: filter_corr; length(highlyCorDescr)=',length(highlyCorDescr),'; dim(res)=',dim(res),'\n')
   return(res)
 }
 #' Title
@@ -167,9 +185,9 @@ normalize<-function(fm,normtype){
   mdt$Norm<-normtype
   cat(unique(as.character(mdt$Norm)),unique(mdt$fname),'\n')
   mz<-switch(as.character(normtype),
-  None=mz,
-  Autoscaling=scale(mz),
-  Pareto=paretoscale(mz))
+             None=mz,
+             Autoscaling=scale(mz),
+             Pareto=paretoscale(mz))
   cat(format(Sys.time(), "%b %d %X"),'Function: normalize(fm,"',normtype,'") finish.\n')
   return(cbind(mdt,mz))
 }
@@ -194,8 +212,8 @@ smpl_split_fm<-function(fm,split=0.6){
   mdt<-get_mdt(fm)
   smpl<-mdt %>% dplyr::select(smpl.id,target) %>% unique
   trainIndexSmpl <- createDataPartition(smpl$target, p = split,
-                                    list = FALSE,
-                                    times = 1)
+                                        list = FALSE,
+                                        times = 1)
   test_smpl<-smpl$smpl.id[-trainIndexSmpl]
   fm$grp<-groups[1]
   fm$grp[fm$smpl.id %in% test_smpl]<-groups[2]
@@ -203,17 +221,13 @@ smpl_split_fm<-function(fm,split=0.6){
   return(fm)
 }
 
-train_model<-function(fm,modeltype,use.rt=FALSE){
-  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'",use.rt=',use.rt,'") starts. Mem:',getFreeMem(),'GB\n')
+train_model<-function(fm,modeltype){
+  cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'") starts. Mem:',getFreeMem(),'GB\n')
   fm$was.trained<-0
-  if(use.rt){
-    idx<-grep("(MZ_.*|target|rt)",names(fm))
-  }else{
-    idx<-grep("(MZ_.*|target)",names(fm))
-  }
+  idx<-grep("(MZ_.*|target)",names(fm))
   trdx<-which(fm$grp==groups[1])
   if(smpl<length(trdx)){
-  jdx<-trdx[sample.int(length(trdx),size = smpl)]
+    jdx<-trdx[sample.int(length(trdx),size = smpl)]
   }else{
     jdx<-trdx
   }
@@ -221,8 +235,8 @@ train_model<-function(fm,modeltype,use.rt=FALSE){
   train<-fm[jdx,idx]
   cat(format(Sys.time(), "%b %d %X"),'train dataset',dim(train),'\n')
   res<-switch (modeltype,
-    rf=train_rf(train),
-    xgb=train_xgb(train)
+               rf=train_rf(train),
+               xgb=train_xgb(train)
   )
   cat(format(Sys.time(), "%b %d %X"),'Function: train_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',modeltype,'") finish.\n')
   return(list(model=res,data=fm))
@@ -232,6 +246,23 @@ smpl<-5e6
 
 test_model<-function(mod){
   fm<-mod$data
+  model<-mod$model
+  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") starts. Mem:',getFreeMem(),'GB\n')
+  idx<-grep("(MZ_.*|target)",names(fm))
+  test<-fm[,idx]
+  res<-predict(model,newdata=test)
+  fm$predict<-res
+  fm$method<-model$method
+  cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") finish.\n')
+  return(fm)
+}
+
+eval_model<-function(tst){
+  return(postResample(tst[!tst$was.trained, "predict"], tst[!tst$was.trained, "target"]))
+}
+
+apply_model<-function(mod,newdata){
+  fm<-newdata
   model<-mod$model
   cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") starts. Mem:',getFreeMem(),'GB\n')
   idx<-match(model$finalModel$xNames,names(fm))
@@ -246,6 +277,7 @@ test_model<-function(mod){
   cat(format(Sys.time(), "%b %d %X"),'Function: test_model("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$Filter[1],'","',model$method,'") finish.\n')
   return(fm)
 }
+
 
 make_point_plot<-function(test){
   my.formula <- y ~ x
@@ -288,6 +320,86 @@ plot_train_box<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: plot_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
   return(p)
 }
+
+#### TCP plots ####
+plot_tcp_box<-function(fm,theme=theme_grey()){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_tcp_train("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  fmtcp<-fm
+  fmtcp$tcp<-100-fm$target
+  fmtcp$predict<-100-fm$predict
+  test<-fmtcp[fmtcp$was.trained==0,]
+  p<-make_point_plot(test)+geom_boxplot(aes(group=target))+
+    geom_jitter(aes(x = target, y = predict,color='blue'),data=fmtcp[fmtcp$was.trained==1,])+
+    xlab('Assigned TCP')+ylab('Predicted TCP')+theme
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_tcp_train("',fmtcp$fname[1],'","',
+      as.character(fmtcp$Norm[1]),'","',fmtcp$method[1],'") finish\n')
+  return(p)
+}
+
+smpl_box_theme<-theme_bw() + 
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(size=20),
+    legend.background = element_rect(fill = "white", size = 4, colour = "white"),
+    legend.justification = c(0.99, 0.5),
+    legend.position = c(0.99, 0.5))
+
+plot_tcp_smpl_box<-function(fm,theme=theme_grey(base_size=14),palette=NULL){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_tcp_smpl_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  fmtcp<-fm
+  fmtcp$target<-100-fm$target
+  fmtcp$predict<-100-fm$predict
+  sum_tst<-ddply(fmtcp,.(smpl.id,target,was.trained),
+                 summarise,min.pred=min(predict),mean.pred=mean(predict),
+                 max.pred=max(predict))
+  fmtcp$samples<-factor(fmtcp$smpl.id,levels = sum_tst$smpl.id[order(sum_tst$target)])
+  fmtcp$Set<-factor(fmtcp$was.trained,labels=c('Validation','Train'))
+  sum_tst$samples<-factor(sum_tst$smpl.id,levels = sum_tst$smpl.id[order(sum_tst$target)])
+  p <- ggplot(fmtcp, aes(x=samples, y=predict,color=Set)) +
+    geom_boxplot()+
+    geom_point(data=sum_tst,
+               aes(x=samples, y=target),
+               color='black',
+               shape='+',size=6)+
+    coord_flip()+xlab('Predicted TCP')+ylab('Sample ID')
+  p<-p+theme
+  if(!is.null(palette)){
+    p<-p+scale_colour_brewer(type = "seq", palette =palette)
+  }
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_tcp_smpl_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+
+plot_median_spectrum_tcp_box<-function(fm,theme=theme_grey(base_size=26)){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_median_spectrum_tcp_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  fmtcp<-fm
+  fmtcp$target<-100-fm$target
+  fmtcp$predict<-100-fm$predict
+  spec_tst<-make_mean_spectrum(fmtcp)
+  test<-spec_tst[spec_tst$was.trained==0,]
+  p<-make_median_spectrum_point_plot(test)+geom_boxplot(aes(group=target))+
+    geom_jitter(aes(x = target, y = median.pred),color='blue', size=2,
+                data=spec_tst[spec_tst$was.trained==1,])+
+    xlab('Assigned TCP')+ylab('Median of predicted TCP')+theme
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_median_spectrum_tcp_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+
+plot_mean_spectrum_tcp_box<-function(fm,theme=theme_grey(base_size=26)){
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_mean_spectrum_tcp_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") starts. Mem:',getFreeMem(),'GB\n')
+  fmtcp<-fm
+  fmtcp$target<-100-fm$target
+  fmtcp$predict<-100-fm$predict
+  spec_tst<-make_mean_spectrum(fmtcp)
+  test<-spec_tst[spec_tst$was.trained==0,]
+  p<-make_mean_spectrum_point_plot(test)+geom_boxplot(aes(group=target))+
+    geom_jitter(aes(x = target, y = mean.pred),color='blue',size=2,
+                data=spec_tst[spec_tst$was.trained==1,])+
+    xlab('Assigned TCP')+ylab('Mean of predicted TCP')+theme
+  cat(format(Sys.time(), "%b %d %X"),'Function: plot_mean_spectrum_tcp_box("',fm$fname[1],'","',as.character(fm$Norm[1]),'","',fm$method[1],'") finish\n')
+  return(p)
+}
+
 #### Spectrum aggregation #####
 make_mean_spectrum<-function(tst){
   spec_tst<-ddply(tst,.(spectrumid,patientid,diagnosis,smpl.id,t.id,norm.p,tumor.p,necro.p,norm.type,othr.p,target,was.trained),summarise,min.pred=min(predict),mean.pred=mean(predict),median.pred=median(predict),max.pred=max(predict))
@@ -368,6 +480,7 @@ plot_train_smpl_box<-function(fm){
   return(p)
 }
 
+
 train_rf<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_rf',' starts. Mem:',getFreeMem(),'GB\n')
   fitCV10<-trainControl(method = "repeatedcv",
@@ -413,7 +526,7 @@ train_xgb<-function(train){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_xgb',' finish.\n')
   return(xboostFitCVspec)
 }
-#### IML ####
+
 xgb_importance<-function(mod){
   cat(format(Sys.time(), "%b %d %X"),'Function: xgb_importance starts. \n')
   fm<-mod$data
@@ -440,11 +553,7 @@ get_shap_values<-function(imp){
   #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values length(model)',length(model),' \n')
   imp<-imp$importance
   #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values dim(imp)',dim(imp),' \n')
-  idx<-match(model$xNames,names(fm))
-  if(any(is.na(idx))){
-    i<-which(is.na(idx))
-    stop('Model parameters [',model$xNames[i],'] are missing from the dataset.\n')
-  }
+  idx<-grep("(MZ_.*)",names(fm))
   tm<-as.matrix(fm[,idx])
   #cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values dim(tm)',dim(tm),' \n')
   shap_values <- SHAPforxgboost::shap.values(xgb_model = model, X_train = tm)
@@ -482,11 +591,7 @@ get_xgb.shap_plot<-function(imp){
   fm<-imp$data
   model<-imp$model$finalModel
   imp<-imp$importance
-  idx<-match(model$xNames,names(fm))
-  if(any(is.na(idx))){
-    i<-which(is.na(idx))
-    stop('Model parameters [',model$xNames[i],'] are missing from the dataset.\n')
-  }
+  idx<-grep("(MZ_.*)",names(fm))
   tm<-as.matrix(fm[,idx])
   contr<-predict(model,newdata=tm, predcontrib = TRUE)
   shap<-xgb.plot.shap(tm,contr,model=model$finalModel,
@@ -501,70 +606,37 @@ get_shap_plot<-function(imp){
   fm<-imp$data
   model<-imp$model$finalModel
   imp<-imp$importance
-  idx<-match(model$xNames,names(fm))
-  if(any(is.na(idx))){
-    i<-which(is.na(idx))
-    stop('Model parameters [',model$xNames[i],'] are missing from the dataset.\n')
-  }
+  idx<-grep("(MZ_.*)",names(fm))
   tm<-as.matrix(fm[,idx])
   sh_res<-shap.score.rank(xgb_model = model, 
-                  X_train =tm,
-                  shap_approx = F
+                          X_train =tm,
+                          shap_approx = F
   )
   sh_long<-shap.prep(shap = sh_res,
-            X_train = tm , 
-            top_n = 10
+                     X_train = tm , 
+                     top_n = 10
   )
   p<-plot.shap.summary(data_long = sh_long)
   cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_plot  finish. \n')
   return(p)
-  }
+}
 
-#### Variational analysis ####
-get_err<-function(imp){
-  cat(format(Sys.time(), "%b %d %X"),'Function: get_err starts. \n')
-  fm<-imp$data
-  mod<-imp$model
-  model<-mod$finalModel
-  imp<-imp$importance
-  idx<-match(model$xNames,names(fm))
-  if(any(is.na(idx))){
-    i<-which(is.na(idx))
-    stop('Model parameters [',model$xNames[i],'] are missing from the dataset.\n')
-  }
-  tm<-as.matrix(fm[,idx])
-  res<-predict(model,newdata=tm)
-  err<-fm$target-res
-  fm$predict<-res
-  fm$err<-err
-  p<-list(data=fm,model=mod,importance=imp)
-  cat(format(Sys.time(), "%b %d %X"),'Function: get_err finish. \n')
-  return(p)
-}
-get_outliers<-function(errl,dev=3.0){
-  cat(format(Sys.time(), "%b %d %X"),'Function: get_outliers starts. \n')
-  fm<-errl$data
-  idxLow<-which(err<(mean(err)-dev*sd(err)))
-  idxHigh<-which(err>(mean(err)+dev*sd(err)))
-  fm1<-fm[c(idxLow,idxLow),]
-  errl$data<-fm1
-  return(errl)
-}
 train_trigger<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: train_trigger',' starts. Mem:',getFreeMem(),'GB\n')
   return(length(unique(fm$norm.p))>2)
 }
 
 #### Train reduced model ####
-get_reduced_fm<-function(imp,threshold=10){
+get_reduced_fm<-function(imp,threshold=5){
   cat(format(Sys.time(), "%b %d %X"),'Function: get_shap_values starts. \n')
   fm<-imp$data
   shap_values <- get_shap_values(imp)
-  idxMZ<-match(imp$model$finalModel$xNames,names(fm))
+  idxMZ<-grep('MZ_',names(fm))
   shval<-cbind(fm[,-idxMZ],shap_values$shap_score)
-  idx<-match(imp$model$finalModel$xNames,names(shval))
-  sh_mean<-ddply(shval,.(target),function(.x){apply(.x[,idx],2,mean)})
+  idxMZ<-grep('MZ_',names(shval))
+  sh_mean<-ddply(shval,.(target),function(.x){apply(.x[,idxMZ],2,mean)})
   sh_mean_long<-melt(sh_mean,id='target')
+  idxMZ<-grep('MZ_',names(fm))
   idxOpt<-match(as.character(unique(
     sh_mean_long$variable[abs(sh_mean_long$value)>threshold])),
     names(fm))
@@ -642,7 +714,7 @@ load_dataset<-function(res,mode,mz,diag){
 get_pat_df<-function(fm){
   cat(format(Sys.time(), "%b %d %X"),'Function: get_pat_df','\n')
   if(dim(fm)[2]>2){
-  return(unique(fm[,c("patientid","diagnosis")]))
+    return(unique(fm[,c("patientid","diagnosis")]))
   }else{
     return(data.frame())
   }
