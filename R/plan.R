@@ -1,28 +1,24 @@
+peaks=get_peaks(dpath)#[1:12]
 plan <- drake_plan(
-  ms_setup=target(c(res=r,mode=m,mz=z),
-                  transform = cross(r=!!c(1,2),
-                                    m=!!c(1,2),
-                                    z=!!c(1,2))),
-  model = target(
-    get_model(ms_setup,diag,expt,method,idx),
-    # Define an analysis target for each combination of
-    # tuning_setting, mean_value, and model_function.
-    transform = cross(
-      ms_setup,diag=!!c(3,6,15),expt=!!c(1,2),
-      method = c("rf", "xgbDART"),
-      idx = !!c("pat","spec"),
-      .id = c(diag,expt,ms_setup,method,idx),.tag_out=dataset
-    )
+  trace = TRUE,
+  fm=target(prepare_feature_matrix(file_in(!!peak),norm_shift=10),transform = map(peak=!!peaks),fname=!!peak),# convert peaks to feature matrix
+  diag_stat=target(fm %>% select(diagnosis) %>% unique %>% dim() %>% (function(.x)data.frame(x=.x[1],y=.x[2])),transform = map(fm),fname=!!peak),
+  results = target(
+    dplyr::bind_rows(diag_stat),
+    transform = combine(diag_stat)
   ),
-  predict=target(
-    predict_dataset(model,ms_setup,ddiag,dexpt),
-    transform = cross(
-      model,ddiag=!!c(3,6,15),dexpt=!!c(1,2),
-      .id = c(diag,expt,ms_setup,method,idx,ddiag,dexpt),.tag_out=preds
-    )
-  ),
-  matrix=target(
-    bind_rows(preds,.id=preds),
-    transform = combine(preds,.by=c(method,idx,ms_setup))
-  )
+  smpl_splited_fm=target(smpl_split_fm(fm),transform = map(fm)),# split feature matrix into train/test parts by patientid
+  normalized_fm=target(normalize(fm=smpl_splited_fm,normtype),transform = cross(smpl_splited_fm,normtype=!!normtypes)),# scale feature matrix \cite{vandenBerg:2006hm}
+  # splited_fm=target(transform = map(normalized_fm)),# split feature matrix into train/test parts by spectrumid with respect to percentage
+  # pca=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make PCA plots for transformed feature matrices
+  # umap=target(transform = cross(fm=normalized_fm,color=!!c('diagnosis','spectrumid','patientid'))),# make umap plots for transformed feature matrices
+  rf_cv10=target(train_model(fm=normalized_fm,modeltype='rf'),transform = map(normalized_fm)),# train regression model with CV10
+  test_rf=target(test_model(fm=normalized_fm,model=rf),transform = map(rf=rf_cv10)),
+  plot_rf=target(plot_test(fm=test_rf),transform = map(test_rf))
+  #xgb_cv10=target(train_model(fm=normalized_fm,modeltype='xgb'),transform = cross(normalized_fm),trigger=trigger(condition=train_trigger(fm=normalized_fm)))#,# train regression model with CV10
+  #test_xgb=target(test_model(fm=normalized_fm,model=xgb),transform = map(xgb=xgb_cv10)),
+  #plot_xgb=target(plot_test(fm=test_xgb),transform = map(test_rf))
+  # shap_data=target(transform = map(cv10)),# select small part of scans and calculate data shapley
+  # shap_xgb=target(transform = map(shap_data)),# train XGB model to predict data shapley
+  # select_shap=target(transform = map(fm=splited_fm,xgb=shap_xgb)), #calculate data shapley for all scans in the FM and keep 75% of highest value
 )
