@@ -19,6 +19,6 @@ groupCATscore<-function(X,class,cutoff=0.85){
   laply(c,function(jj){j<-which(c==jj);tmp<-sign(tstat[j,])*sqrt(sum(tstat[j,]^2));tmp[j==j[1]]})->tmp
 colnames(tmp)<-paste0('g',colnames(tmp))
 res<-cbind(as.data.frame(tstat[TRUE,]),tmp)
-return(res[order(abs(tmp[,3]),decreasing = TRUE),])
+return(res[order(abs(tmp[,1]),decreasing = TRUE),])
 
 }
