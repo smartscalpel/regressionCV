@@ -10,7 +10,7 @@ options(clustermq.scheduler = "slurm", template = "slurm_clustermq.tmpl")
 
 make(
   plan, max_expand = 8,# defined in R/plan.R
-  verbose = 2 
+  verbose = 2,cache_log_file = TRUE 
   # ,parallelism = "clustermq",
   # jobs = 8,
   #   log_make = "drake.log",
