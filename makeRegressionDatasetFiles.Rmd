@@ -134,7 +134,7 @@ plotPie<-function(x,label,main='',th=1){
 #Regression description dataset expanded to the spectrum level
 fname<-'RegressionMetaData.spec.csv' 
 #Log file 
-logname<-'RegressionMetaData.log'
+logname<-'RegressionMetaData.spec.log'
 #Database export folder to get data from
 sdir<-'peakPat'
 #Target folder for regression data 
