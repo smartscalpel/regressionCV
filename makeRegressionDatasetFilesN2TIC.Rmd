@@ -1,0 +1,271 @@
+---
+title: "Prepare dataset for regressionN2TIC"
+author: "Anatoly Sorokin"
+date: '`r format(Sys.time(), "%d.%m.%Y")`'
+output:
+  pdf_document:
+    keep_tex: yes
+    number_sections: yes
+  html_document: default
+params:
+  format: !r if(opts_knit$get("rmarkdown.pandoc.to") == 'html') c('screen', 'print')
+    else 'print'
+  version: !r if(nchar(Sys.which("git"))) system("git describe --long --dirty --abbrev=10  --tags  --always",
+    intern=TRUE) else date()
+header-includes:
+- \usepackage[T2A]{fontenc}
+- \usepackage[utf8]{inputenc}
+- \usepackage[english,russian]{babel}
+- \usepackage{grffile}
+- \usepackage{rotating}
+- \usepackage{caption}
+- \usepackage{longtable}
+- \usepackage{lscape}
+---
+```{r loadPackages, include=FALSE, cache=FALSE}
+## load additional packages in this chunk
+library(pander)
+library(knitr)
+#library('Matrix')
+library(ggplot2)
+library(data.table)
+#library(plyr)
+library(xtable)
+#library(xcms)
+#library("FactoMineR")
+#library(cluster)
+#library(dendextend)
+#library(factoextra)
+#library(corrplot)
+library(ncdf4)
+#library("PerformanceAnalytics")
+#library("pvclust")
+#library("sda")
+library(RColorBrewer)
+library(MALDIquant)
+library(MALDIquantForeign)
+ticThreshold<-0.01
+absTicThreshold<-1000
+```
+
+```{r setup, include=FALSE, cache=FALSE}
+## This chunk should contain global configuration commands.
+## Use this to set knitr options and related things. Everything
+## in this chunk will be included in an appendix to document the
+## configuration used.
+#output <- opts_knit$get("rmarkdown.pandoc.to")
+opts_knit$set(stop_on_error = 2L)
+
+## By default R code is only included in HTML versions of the report
+## (where it can be collapsed). You can generate a PDF version
+## using rmarkdown::pdf_document to get a copy for print. Extensive
+## chunks of R code may or may not be desired in /hat setting. If you
+## want them simply change the following arguments to `echo = TRUE`.
+## In either case the default can be overwritten for individual chunks.
+#opts_chunk$set(echo = output=="html")
+#opts_chunk$set(warning = output=="html")
+#opts_chunk$set(message = output=="html")
+
+## Cache options
+opts_chunk$set(cache=FALSE)
+
+## Figure options
+## Set default figure format
+#options(reportmd.figure.format=params$format)
+
+## Set 'hide.fig.code' to FALSE to include code chunks that
+## produce Figures in the output. Note that this affects all chunks
+## that provide a figure caption.
+opts_chunk$set(hold=TRUE, hide.fig.code=FALSE)
+
+## Set up default plotting options for different formats.
+## These can be overwritten for individual chunks
+#interactiveFig()
+#screenFig()
+#printFig()
+
+## Pander options
+panderOptions("digits", 3)
+panderOptions("table.split.table", 160)
+#panderOptions("table.style", "grid")
+
+## Configure Figure and Table lables
+#options(figcap.prefix = "Figure", figcap.sep = ":", figcap.prefix.highlight = "**")
+#options(tabcap.prefix = "Table", tabcap.sep = ":", tabcap.prefix.highlight = "**")
+
+## Install required knitr hooks
+#installHooks()
+```
+
+```{r functions, include=FALSE}
+## Custom functions used in the analysis should go into this chunk.
+## They will be listed in their own section of the appendix.
+
+##==================== Functions ====================##
+panderDict<-function(d){
+  w<-dim(d)[2]
+  pander(d, justify = c('right', rep('left', w-1)))
+}
+panderCnt<-function(d){
+  w<-dim(d)[2]
+  inCol<-sapply(d,is.numeric)
+  j<-rep('left',w)
+  j[inCol]<-'right'
+  pander(d, justify = j)
+}
+plotPie<-function(x,label,main='',th=1){
+  pr<-100*x/sum(x)
+  idx<-which(pr>=th)
+  xx<-x[idx]
+  lx<-label[idx]
+  ord<-order(xx,decreasing = TRUE)
+  xx<-xx[ord]
+  lx<-lx[ord]
+  xx<-c(xx,sum(x[-idx]))
+  lx<-c(lx,'Other')
+  graphics::pie(xx,lx,main=main)
+}
+```
+
+```{r queries, include=FALSE}
+```
+
+```{r echo=FALSE, include=FALSE}
+#Regression description dataset expanded to the spectrum level
+fname<-'RegressionMetaData.spec.csv' 
+#Log file 
+logname<-'RegressionMetaData.log'
+#Database export folder to get data from
+sdir<-'peakPat'
+#Target folder for regression data 
+tdir<-'data'
+#Signal-to-noise threshold. Database have all peaks with SNR>1
+SNR<-2
+if(!file.exists(paste0(tdir,'/regressionN2TIC'))){
+  dir.create(paste0(tdir,'/regressionN2TIC'))
+}
+```
+
+# Read data
+Before running the code a number of variables should be setted for appropriate data loading:
+ 
+
+
+# Read table
+```{r read.tbl}
+metadata<-fread(fname)
+mt<-metadata[,.(N=length(specid),Tnum=length(unique(t.id)),Snum=length(unique(smpl.id)),Pnum=length(unique(patid))),by=.(diagid,diagnosis,exptype,res,mode,device,mzrange)]
+mt<-mt[order(N,decreasing = TRUE)]
+pander(mt)
+```
+
+# Datasets
+
+```{r work.with.mt}
+mtN<-dim(mt)[1]
+for(i in 1:mtN){
+  diag<-mt$diagid[i]
+  res<-mt$res[i]
+  mode<-mt$mode[i]
+  mzr<-mt$mzrange[i]
+  fnm<-paste0('peak2019',
+              '.diag_',diag,
+              '.expt_',mt$exptype[i],
+              '.res_',res,
+              '.mode_',mode,
+              '.dev_',mt$device[i],
+              '.mz_',mzr,'.tsv.gz')
+  f<-paste0(sdir,'/',fnm)
+  if(file.exists(f)){
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,
+               ' diag=',diag,
+              ' expt=',mt$exptype[i],
+              ' res=',res,
+              ' mode=',mode,
+              ' dev=',mt$device[i],
+              ' mz=',mzr,
+      '\n',file = logname,append = TRUE)
+    dt<-fread(f)
+    names(dt)<-c('id','scan','spectrumid','diagnosis','patientid',
+                 'num','rt','tic','mz','intensity','norm2tic','snr')
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,'file read\n',file = logname,append = TRUE)
+    pidx<-which(dt$spectrumid%in%metadata$specid)
+    dtm<-dt[pidx]
+    fwrite(dtm,file = paste0(tdir,'/regressionN2TIC/',fnm),sep = '|',col.names = FALSE)
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,'TSV written\n',file = logname,append = TRUE)
+    dtSNR<-dtm[snr>SNR]
+    dtSNR$orig.intensity<-dtSNR$intensity
+    dtSNR$intensity<-dtSNR$norm2tic*1e9
+    mdt<-dtSNR[,.(scan,spectrumid,patientid,num,rt,diagnosis,tic)]
+    md<-unique(mdt)
+    idxMD<-match(md$spectrumid,metadata$specid)
+    md<-cbind(md,metadata[idxMD,.(t.id,smpl.id,tissue.lbl,smpl.lbl,
+                                  norm.p,tumor.p,necro.p,norm.type,othr.p,
+                                  histdiag)])
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,'metadata build\n',file = logname,append = TRUE)
+    p<-scalpeldb::makeMassPeak(dtSNR,metadata = md,align =TRUE)
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,'peak list ready\n',file = logname,append = TRUE)
+    fprds<-sub('tsv.gz','peak.rds',fnm)
+    saveRDS(p,file = paste0(tdir,'/regressionN2TIC/',fprds))
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,'peak file writen\n',file = logname,append = TRUE)
+    dtm$mz0<-round(dtm$mz,digits = 0)
+    dtm$mz2<-round(dtm$mz,digits = 2)
+    dtm0<-dtm[,.(id=min(id),
+                 intensity=sum(intensity),
+                 norm2tic=sum(norm2tic),
+                 snr=min(snr)),
+              by=.(scan,spectrumid,
+                   diagnosis,patientid,
+                   num,rt,tic,mz0)]
+    dtm0$mz<-paste0('mz',dtm0$mz0)
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,'MZ0 ready\n',file = logname,append = TRUE)
+    fprds<-sub('tsv.gz','mz0.rds',fnm)
+    saveRDS(dtm0,file = paste0(tdir,'/regressionN2TIC/',fprds))
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,'MZ0 written\n',file = logname,append = TRUE)
+    if(res==1){
+      dtm2<-dtm[,.(id=min(id),
+                   intensity=sum(intensity),
+                   norm2tic=sum(norm2tic),
+                   snr=min(snr)),
+                by=.(scan,spectrumid,
+                     diagnosis,patientid,
+                     num,rt,tic,mz2)]
+      dtm2$mz<-paste0('mz',dtm2$mz2)
+  cat(format(Sys.time(), "%b %d %X"),i,mtN,'MZ2 ready\n',file = logname,append = TRUE)
+      fprds<-sub('tsv.gz','mz2.rds',fnm)
+      saveRDS(dtm2,file = paste0(tdir,'/regressionN2TIC/',fprds))
+   cat(format(Sys.time(), "%b %d %X"),i,mtN,'MZ2 written\n',file = logname,append = TRUE)
+   }
+  }else{
+      cat(format(Sys.time(), "%b %d %X"),i,f,'does not exists.\n')
+  }
+}
+```
+
+
+# Appendix {.tabset}
+## Functions
+```{r functions, eval=FALSE, include=TRUE}
+```
+```{r queries, eval=FALSE, include=TRUE}
+```
+
+## Setup R
+```{r setup, eval=FALSE}
+```
+
+## Versions
+### Document version
+```{r docVersion, echo=FALSE, results='asis', cache=FALSE}
+cat(params$version)
+```
+
+### Session Info
+```{r sessionInfo, echo=FALSE, results='asis', class='text', warning=FALSE}
+si<-devtools::session_info()
+cat('Platform\n\n')
+pander::pander(si$platform)
+cat('Packages\n\n')
+knitr::kable(as.data.frame(si$packages)[,c('ondiskversion','loadedversion','date','source')],align = c('l','l'))
+```
+
