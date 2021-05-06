@@ -45,7 +45,7 @@ library(RColorBrewer)
 library(MALDIquant)
 library(MALDIquantForeign)
 library(DBI)
-library(MonetDBLite)
+library(MonetDB.R)
 ticThreshold<-0.01
 absTicThreshold<-1000
 ```
@@ -244,14 +244,14 @@ if(!(exists('dbname')&
 # Connect to the database
 
 ```{r db.connect}
-conn <- dbConnect(MonetDBLite::MonetDB.R(),
+conn <- dbConnect(MonetDB.R::MonetDB.R(),
 dbname = dbname,host=host,
 user=usr,password=pwd,timeout=2400)
 ```
 
 # Read table
 ```{r read.tbl}
-metadata<-fread(fname,stringsAsFactors = FALSE)
+metadata<-fread(fname,stringsAsFactors = FALSE,dec=',',sep='\t')
 pander(metadata[,c(1:2,4:7)])
 ```
 
