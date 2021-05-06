@@ -45,7 +45,7 @@ library(RColorBrewer)
 library(MALDIquant)
 library(MALDIquantForeign)
 library(DBI)
-library(MonetDBLite)
+library(MonetDB.R)
 ticThreshold<-0.01
 absTicThreshold<-1000
 ```
@@ -244,14 +244,16 @@ if(!(exists('dbname')&
 # Connect to the database
 
 ```{r db.connect}
-conn <- dbConnect(MonetDBLite::MonetDB.R(),
+conn <- dbConnect(MonetDB.R::MonetDB.R(),
 dbname = dbname,host=host,
 user=usr,password=pwd,timeout=2400)
 ```
 
 # Read table
 ```{r read.tbl}
-metadata<-fread(fname,stringsAsFactors = FALSE)
+metadata<-fread(fname,stringsAsFactors = FALSE,dec=',',sep='\t')
+ttl<-metadata$norm.p+metadata$tumor.p+metadata$necro.p+metadata$othr.p
+metadata<-metadata[ttl==100,]
 pander(metadata[,c(1:2,4:7)])
 ```
 
@@ -266,8 +268,9 @@ tumor.p=0,
 necro.p=0,
 othr.p=0,
 norm.type='brain',
-diagid=32,
-diagnosis='Brain',
+#diagid=32,
+#diagnosis='Brain',
+diagnosis=32,
 histdiag=t$location )
 pander(healthy[,c(1:2,4:7)])
 tbl<-rbind(metadata,healthy)
@@ -292,16 +295,17 @@ idx<-match(tbl$tissue.lbl,tis.diagDF$label)
 jdx<-which(!is.na(idx))
 tbl.j<-tbl[jdx]
 jjdx<-match(tbl.j$tissue.lbl,tis.diagDF$label)
-tbl.j$diagnosis<-as.character(tis.diagDF$diagnosis)[idx[jdx]]
-tbl.j$diagid<-tis.diagDF$diagid[jjdx]
+#tbl.j$diagnosis<-as.character(tis.diagDF$diagnosis)[idx[jdx]]
+tbl.j$diagnosis<-tis.diagDF$diagid[jjdx]
 tbl.j$t.id<-tis.diagDF$id[jjdx]
-tbl$diagnosis<-""
-tbl$diagnosis[jdx]<-as.character(tis.diagDF$diagnosis)[idx[jdx]]
-tbl$diagid[jdx]<-tis.diagDF$diagid[idx[jdx]]
+#tbl$diagnosis<-""
+#tbl$diagnosis[jdx]<-as.character(tis.diagDF$diagnosis)[idx[jdx]]
+tbl$diagnosis<-NA
+tbl$diagnosis[jdx]<-tis.diagDF$diagid[idx[jdx]]
 tbl$t.id[jdx]<-tis.diagDF$id[idx[jdx]]
 tblOrig<-tbl
 tbl<-tbl.j
-pander(tbl[,.(t.id,diagid,diagnosis)])
+pander(tbl[,.(t.id,diagnosis)])
 ```
 
 ```{r get.smpl}
@@ -336,7 +340,7 @@ sdf<-cbind(tbl[idx,],specDF[,-c(2,4)])
 ```{r save.spectrum}
 rdatfile<-sub('csv$','RData',fname)
 rdsfile<-sub('csv$','rds',fname)
-tsvfile<-sub('csv$','spec.tsv',fname)
+tsvfile<-sub('csv$','spec.csv',fname)
 save(tbl,sdf,specDF,file=rdatfile)
 saveRDS(sdf,file = rdsfile)
 write.table(sdf,file = tsvfile,sep='\t',row.names = FALSE,col.names = TRUE)
