@@ -295,17 +295,16 @@ idx<-match(tbl$tissue.lbl,tis.diagDF$label)
 jdx<-which(!is.na(idx))
 tbl.j<-tbl[jdx]
 jjdx<-match(tbl.j$tissue.lbl,tis.diagDF$label)
-#tbl.j$diagnosis<-as.character(tis.diagDF$diagnosis)[idx[jdx]]
-tbl.j$diagnosis<-tis.diagDF$diagid[jjdx]
+tbl.j$diagnosis<-as.character(tis.diagDF$diagnosis)[idx[jdx]]
+tbl.j$diagid<-tis.diagDF$diagid[jjdx]
 tbl.j$t.id<-tis.diagDF$id[jjdx]
-#tbl$diagnosis<-""
-#tbl$diagnosis[jdx]<-as.character(tis.diagDF$diagnosis)[idx[jdx]]
-tbl$diagnosis<-NA
-tbl$diagnosis[jdx]<-tis.diagDF$diagid[idx[jdx]]
+tbl$diagnosis<-""
+tbl$diagnosis[jdx]<-as.character(tis.diagDF$diagnosis)[idx[jdx]]
+tbl$diagid[jdx]<-tis.diagDF$diagid[idx[jdx]]
 tbl$t.id[jdx]<-tis.diagDF$id[idx[jdx]]
 tblOrig<-tbl
 tbl<-tbl.j
-pander(tbl[,.(t.id,diagnosis)])
+pander(tbl[,.(t.id,diagid,diagnosis)])
 ```
 
 ```{r get.smpl}
