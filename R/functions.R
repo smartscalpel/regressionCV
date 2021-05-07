@@ -14,7 +14,7 @@ library(doParallel)
 library(SHAPforxgboost)
 
 #### Define your own path to the dataset ####
-dpath<-'./regression/'
+dpath<-'../data/regressionN2TIC/'
 
 getFreeMem<-function(){
   #as.numeric(system("awk '/MemFree/ {print $2}' /proc/meminfo", intern=TRUE))/1e6
@@ -668,10 +668,11 @@ get_model_fname<-function(ms_setup,diag,expt,method,idx){
   return(fname)
 }
 
+fpref<-'peak_is5_'
 get_fm_fname<-function(res,mode,mz,ddiag,path){
   cat(format(Sys.time(), "%b %d %X"),'Function: get_fm_fname','\n')
-  fpatt<-sprintf('peak2019.diag_%d.expt_.*.res_%d.mode_%d.dev_.*.mz_%d.peak.rds',
-                 ddiag,res,mode,mz)
+  fpatt<-sprintf('%s.diag_%d.expt_.*.res_%d.mode_%d.dev_.*.mz_%d.peak.rds',
+                 fpref,ddiag,res,mode,mz)
   fname<-dir(path = path,pattern = fpatt)
   return(fname)
 }
