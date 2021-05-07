@@ -136,9 +136,9 @@ fname<-'RegressionMetaData.spec.csv'
 #Log file 
 logname<-'RegressionMetaDataN2TIC.spec.log'
 #Database export folder to get data from
-sdir<-'peakPat'
+sdir<-'/var/workspaceR/scalpelData/peaksPat_isID5/' #'peakPat'
 #Target folder for regression data 
-tdir<-'data'
+tdir<-'/var/workspaceR/scalpelData/regression202104/data'
 #Signal-to-noise threshold. Database have all peaks with SNR>1
 SNR<-2
 if(!file.exists(paste0(tdir,'/regressionN2TIC'))){
@@ -168,7 +168,7 @@ for(i in 1:mtN){
   res<-mt$res[i]
   mode<-mt$mode[i]
   mzr<-mt$mzrange[i]
-  fnm<-paste0('peak2019',
+  fnm<-paste0('peak_is5_',#'peak2019',
               '.diag_',diag,
               '.expt_',mt$exptype[i],
               '.res_',res,
