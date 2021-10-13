@@ -668,13 +668,30 @@ get_model_fname<-function(ms_setup,diag,expt,method,idx){
   return(fname)
 }
 
+#Dataset file prefix
+fpref<-'peak2019'
+#' Prepare dataset file name list.
+#' Using provided parameters of the spectra this function create list of files
+#' to be read for the dataset creation.
+#' 
+#' This function uses parameter \code{fpref} as a datafile prefix. Different 
+#' datasets could use different prefixes such as 'peak2019'.
+#'
+#' @param res -- resolution
+#' @param mode -- registration mode
+#' @param mz -- width of mass range
+#' @param ddiag -- diagnosis
+#' @param path -- path to datafile folder
+#'
+#' @return list of filepath strings.
 get_fm_fname<-function(res,mode,mz,ddiag,path){
   cat(format(Sys.time(), "%b %d %X"),'Function: get_fm_fname','\n')
-  fpatt<-sprintf('peak2019.diag_%d.expt_.*.res_%d.mode_%d.dev_.*.mz_%d.peak.rds',
-                 ddiag,res,mode,mz)
+  fpatt<-sprintf('%s.diag_%d.expt_.*.res_%d.mode_%d.dev_.*.mz_%d.peak.rds',
+                 fpref,ddiag,res,mode,mz)
   fname<-dir(path = path,pattern = fpatt)
   return(fname)
 }
+
 
 get_model<-function(ms_setup,diag,expt,method,idx){
   cat(format(Sys.time(), "%b %d %X"),'Function: get_model','\n')
