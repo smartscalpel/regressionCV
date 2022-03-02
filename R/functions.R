@@ -14,7 +14,9 @@ library(doParallel)
 library(SHAPforxgboost)
 
 #### Define your own path to the dataset ####
-dpath<-'./regression/'
+#dpath<-'./regression/'
+#dpath<-'/Users/lptolik/Documents/Projects/MSpeaks/dataN2TIC/regression/'
+dpath<-'/Users/lptolik/Dropbox/Скальпель/DBData/regression/'
 
 getFreeMem<-function(){
   #as.numeric(system("awk '/MemFree/ {print $2}' /proc/meminfo", intern=TRUE))/1e6
